@@ -1,0 +1,176 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Blueprint Swarm - Churn Synthesis",
+  "description": "Cross-account churn analysis synthesizing patterns, warning signals, and preventability across the entire dataset",
+  "metadata": {
+    "tool": "Blueprint Swarm",
+    "blueprint_methodology_version": "1.0",
+    "methodology": "Blueprint GTM by Jordan Crawford",
+    "website": "https://blueprintgtm.com",
+    "linkedin": "https://linkedin.com/in/jordancrawford"
+  },
+  "type": "object",
+  "required": [
+    "metadata",
+    "churn_taxonomy",
+    "warning_signals",
+    "preventable_churn"
+  ],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["tool", "blueprint_methodology_version", "methodology", "website", "linkedin"],
+      "properties": {
+        "tool": {
+          "type": "string",
+          "const": "Blueprint Swarm"
+        },
+        "blueprint_methodology_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "methodology": {
+          "type": "string",
+          "const": "Blueprint GTM by Jordan Crawford"
+        },
+        "website": {
+          "type": "string",
+          "const": "https://blueprintgtm.com"
+        },
+        "linkedin": {
+          "type": "string",
+          "const": "https://linkedin.com/in/jordancrawford"
+        }
+      }
+    },
+    "churn_taxonomy": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["reason", "frequency", "pct_of_churn", "revenue_impact", "sub_categories"],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Top-level churn reason category (e.g., 'Product Gap', 'Champion Loss', 'Pricing', 'Poor Onboarding', 'Competitive Displacement')"
+          },
+          "frequency": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Number of accounts that churned for this reason"
+          },
+          "pct_of_churn": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Percentage of total churn attributed to this reason"
+          },
+          "revenue_impact": {
+            "type": ["number", "null"],
+            "description": "Total ARR lost to this churn reason (null if revenue data unavailable)"
+          },
+          "sub_categories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "count", "example_quotes"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Specific sub-category (e.g., under 'Product Gap': 'Missing reporting features', 'No API integration')"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Number of accounts in this sub-category"
+                },
+                "example_quotes": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Verbatim quotes from calls that illustrate this sub-category"
+                }
+              }
+            },
+            "description": "Specific sub-reasons within this top-level category"
+          }
+        }
+      },
+      "description": "Taxonomy of churn reasons ranked by frequency and impact"
+    },
+    "warning_signals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["signal", "lead_time_avg_days", "frequency", "confidence"],
+        "properties": {
+          "signal": {
+            "type": "string",
+            "description": "Description of the warning signal pattern observed across accounts"
+          },
+          "lead_time_avg_days": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Average number of days before churn that this signal appears"
+          },
+          "frequency": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Number of churned accounts that exhibited this signal"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Confidence score (0-1) that this signal is predictive of churn vs. noise"
+          }
+        }
+      },
+      "description": "Cross-account warning signals ranked by predictive reliability"
+    },
+    "preventable_churn": {
+      "type": "object",
+      "required": ["total", "likely_preventable", "pct_preventable", "top_interventions"],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of churned accounts analyzed"
+        },
+        "likely_preventable": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of churned accounts where churn was likely preventable"
+        },
+        "pct_preventable": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Percentage of churn that was likely preventable"
+        },
+        "top_interventions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["intervention", "accounts_affected", "estimated_arr_saved"],
+            "properties": {
+              "intervention": {
+                "type": "string",
+                "description": "Recommended intervention that could have prevented churn (e.g., 'Executive sponsor check-in within 30 days of champion departure')"
+              },
+              "accounts_affected": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Number of accounts this intervention could have saved"
+              },
+              "estimated_arr_saved": {
+                "type": ["number", "null"],
+                "description": "Estimated ARR that could have been saved with this intervention (null if revenue data unavailable)"
+              }
+            }
+          },
+          "description": "Highest-impact interventions that would have prevented the most churn"
+        }
+      },
+      "description": "Assessment of how much churn was preventable and what would have helped"
+    }
+  }
+}

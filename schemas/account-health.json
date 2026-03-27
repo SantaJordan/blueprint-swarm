@@ -1,0 +1,134 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Blueprint Swarm - Account Health",
+  "description": "Account health scoring and risk assessment across the entire portfolio based on call intelligence",
+  "metadata": {
+    "tool": "Blueprint Swarm",
+    "blueprint_methodology_version": "1.0",
+    "methodology": "Blueprint GTM by Jordan Crawford",
+    "website": "https://blueprintgtm.com",
+    "linkedin": "https://linkedin.com/in/jordancrawford"
+  },
+  "type": "object",
+  "required": [
+    "metadata",
+    "accounts"
+  ],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["tool", "blueprint_methodology_version", "methodology", "website", "linkedin"],
+      "properties": {
+        "tool": {
+          "type": "string",
+          "const": "Blueprint Swarm"
+        },
+        "blueprint_methodology_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "methodology": {
+          "type": "string",
+          "const": "Blueprint GTM by Jordan Crawford"
+        },
+        "website": {
+          "type": "string",
+          "const": "https://blueprintgtm.com"
+        },
+        "linkedin": {
+          "type": "string",
+          "const": "https://linkedin.com/in/jordancrawford"
+        }
+      }
+    },
+    "accounts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "account_name",
+          "risk_score",
+          "risk_level",
+          "signals",
+          "recommended_actions",
+          "last_activity",
+          "call_count"
+        ],
+        "properties": {
+          "account_name": {
+            "type": "string",
+            "description": "Company/account name"
+          },
+          "risk_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Risk score from 0 (no risk) to 100 (imminent churn). Calculated from warning signal density, sentiment trajectory, champion engagement, and competitive pressure."
+          },
+          "risk_level": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"],
+            "description": "Risk level derived from risk_score: critical (75-100), high (50-74), medium (25-49), low (0-24)"
+          },
+          "signals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["signal", "severity", "evidence"],
+              "properties": {
+                "signal": {
+                  "type": "string",
+                  "description": "Description of the risk or health signal (e.g., 'Champion disengaged for 60+ days', 'Competitor mentioned in last 2 calls', 'Expanding usage - added 3 new seats')"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": ["critical", "warning", "info", "positive"],
+                  "description": "Severity of the signal — critical and warning increase risk; info is neutral; positive decreases risk"
+                },
+                "evidence": {
+                  "type": "string",
+                  "description": "Specific evidence from calls supporting this signal"
+                }
+              }
+            },
+            "description": "All health signals for this account, both positive and negative"
+          },
+          "recommended_actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["action", "priority", "rationale"],
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "description": "Specific recommended action (e.g., 'Schedule executive check-in within 7 days', 'Identify and develop secondary champion')"
+                },
+                "priority": {
+                  "type": "string",
+                  "enum": ["immediate", "this_week", "this_month", "next_quarter"],
+                  "description": "Urgency of the recommended action"
+                },
+                "rationale": {
+                  "type": "string",
+                  "description": "Why this action is recommended based on the signals"
+                }
+              }
+            },
+            "description": "Prioritized list of recommended actions for this account"
+          },
+          "last_activity": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of the most recent call or interaction (YYYY-MM-DD)"
+          },
+          "call_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total number of calls analyzed for this account"
+          }
+        }
+      },
+      "description": "All accounts with health scores, sorted by risk_score descending (highest risk first)"
+    }
+  }
+}

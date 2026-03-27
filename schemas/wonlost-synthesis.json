@@ -1,0 +1,177 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Blueprint Swarm - Won/Lost Synthesis",
+  "description": "Cross-deal analysis of win and loss factors, champion profiles, and competitive dynamics",
+  "metadata": {
+    "tool": "Blueprint Swarm",
+    "blueprint_methodology_version": "1.0",
+    "methodology": "Blueprint GTM by Jordan Crawford",
+    "website": "https://blueprintgtm.com",
+    "linkedin": "https://linkedin.com/in/jordancrawford"
+  },
+  "type": "object",
+  "required": [
+    "metadata",
+    "win_factors",
+    "loss_factors",
+    "champion_profiles",
+    "competitive_dynamics"
+  ],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["tool", "blueprint_methodology_version", "methodology", "website", "linkedin"],
+      "properties": {
+        "tool": {
+          "type": "string",
+          "const": "Blueprint Swarm"
+        },
+        "blueprint_methodology_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "methodology": {
+          "type": "string",
+          "const": "Blueprint GTM by Jordan Crawford"
+        },
+        "website": {
+          "type": "string",
+          "const": "https://blueprintgtm.com"
+        },
+        "linkedin": {
+          "type": "string",
+          "const": "https://linkedin.com/in/jordancrawford"
+        }
+      }
+    },
+    "win_factors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["factor", "frequency", "pct_of_wins", "example_quotes", "affected_segments"],
+        "properties": {
+          "factor": {
+            "type": "string",
+            "description": "Key factor that contributed to winning deals (e.g., 'Strong executive sponsor aligned on ROI', 'Multi-threaded across 3+ stakeholders')"
+          },
+          "frequency": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Number of won deals where this factor was present"
+          },
+          "pct_of_wins": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Percentage of won deals where this factor was present"
+          },
+          "example_quotes": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Verbatim quotes from calls that illustrate this win factor"
+          },
+          "affected_segments": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Segments, verticals, or deal sizes where this factor was most prevalent (e.g., 'Enterprise', 'Healthcare', '$100K+ deals')"
+          }
+        }
+      },
+      "description": "Factors that consistently appear in won deals, ranked by frequency"
+    },
+    "loss_factors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["factor", "frequency", "pct_of_losses", "example_quotes", "affected_segments"],
+        "properties": {
+          "factor": {
+            "type": "string",
+            "description": "Key factor that contributed to losing deals"
+          },
+          "frequency": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Number of lost deals where this factor was present"
+          },
+          "pct_of_losses": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Percentage of lost deals where this factor was present"
+          },
+          "example_quotes": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Verbatim quotes from calls that illustrate this loss factor"
+          },
+          "affected_segments": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Segments, verticals, or deal sizes where this factor was most prevalent"
+          }
+        }
+      },
+      "description": "Factors that consistently appear in lost deals, ranked by frequency"
+    },
+    "champion_profiles": {
+      "type": "object",
+      "required": ["winning_types", "losing_types"],
+      "properties": {
+        "winning_types": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["profile", "frequency", "characteristics"],
+            "properties": {
+              "profile": {
+                "type": "string",
+                "description": "Champion profile label (e.g., 'Technical Evaluator with Budget Influence')"
+              },
+              "frequency": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Number of won deals with this champion type"
+              },
+              "characteristics": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Observable behaviors and traits of this champion type"
+              }
+            }
+          },
+          "description": "Champion profiles that correlate with won deals"
+        },
+        "losing_types": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["profile", "frequency", "characteristics"],
+            "properties": {
+              "profile": {
+                "type": "string",
+                "description": "Champion profile label (e.g., 'Enthusiastic User Without Authority')"
+              },
+              "frequency": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Number of lost deals with this champion type"
+              },
+              "characteristics": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Observable behaviors and traits of this champion type"
+              }
+            }
+          },
+          "description": "Champion profiles that correlate with lost deals"
+        }
+      },
+      "description": "Analysis of champion types and their correlation with deal outcomes"
+    },
+    "competitive_dynamics": {
+      "type": "string",
+      "description": "Narrative summary of how competitive dynamics influenced win/loss patterns — which competitors appear in wins vs. losses, displacement patterns, and positioning effectiveness"
+    }
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Blueprint Swarm - Playbook Synthesis",
+  "description": "Sales playbook intelligence extracted from call patterns — best discovery questions, objection handlers, and closing patterns",
+  "metadata": {
+    "tool": "Blueprint Swarm",
+    "blueprint_methodology_version": "1.0",
+    "methodology": "Blueprint GTM by Jordan Crawford",
+    "website": "https://blueprintgtm.com",
+    "linkedin": "https://linkedin.com/in/jordancrawford"
+  },
+  "type": "object",
+  "required": [
+    "metadata",
+    "discovery_questions",
+    "objection_handlers",
+    "closing_patterns"
+  ],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["tool", "blueprint_methodology_version", "methodology", "website", "linkedin"],
+      "properties": {
+        "tool": {
+          "type": "string",
+          "const": "Blueprint Swarm"
+        },
+        "blueprint_methodology_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "methodology": {
+          "type": "string",
+          "const": "Blueprint GTM by Jordan Crawford"
+        },
+        "website": {
+          "type": "string",
+          "const": "https://blueprintgtm.com"
+        },
+        "linkedin": {
+          "type": "string",
+          "const": "https://linkedin.com/in/jordancrawford"
+        }
+      }
+    },
+    "discovery_questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["question", "context", "effectiveness", "example_use"],
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "The discovery question as asked by the seller (or improved version based on patterns)"
+          },
+          "context": {
+            "type": "string",
+            "description": "When to use this question — stage, persona, situation (e.g., 'Early discovery with technical evaluator', 'Budget qualification with economic buyer')"
+          },
+          "effectiveness": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "How effective this question is at unlocking meaningful information, based on what followed in the conversation"
+          },
+          "example_use": {
+            "type": "string",
+            "description": "Example of this question being used effectively in a real call — include the question and the response it generated"
+          }
+        }
+      },
+      "description": "Most effective discovery questions observed across calls, ranked by effectiveness"
+    },
+    "objection_handlers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["objection", "best_response", "success_rate", "example_use"],
+        "properties": {
+          "objection": {
+            "type": "string",
+            "description": "The objection as expressed by prospects/customers (e.g., 'Your price is too high compared to X', 'We don't have budget this quarter')"
+          },
+          "best_response": {
+            "type": "string",
+            "description": "The most effective response observed or synthesized from multiple calls"
+          },
+          "success_rate": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "How often this response successfully resolved the objection"
+          },
+          "example_use": {
+            "type": "string",
+            "description": "Real example of this objection being handled — include the objection, the response, and what happened next"
+          }
+        }
+      },
+      "description": "Common objections with the best responses observed, ranked by frequency and success rate"
+    },
+    "closing_patterns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pattern", "context", "effectiveness"],
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "Description of the closing pattern or technique (e.g., 'ROI-anchored close with champion pre-alignment', 'Trial-to-paid conversion with success metrics')"
+          },
+          "context": {
+            "type": "string",
+            "description": "When this pattern works best — deal size, persona, competitive situation"
+          },
+          "effectiveness": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "How effective this closing pattern is based on observed outcomes"
+          }
+        }
+      },
+      "description": "Closing patterns and techniques observed in won deals, ranked by effectiveness"
+    }
+  }
+}

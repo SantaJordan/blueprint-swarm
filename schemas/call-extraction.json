@@ -1,0 +1,224 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Blueprint Swarm - Call Extraction",
+  "description": "Per-call output schema for extracting structured intelligence from sales/CS call transcripts",
+  "metadata": {
+    "tool": "Blueprint Swarm",
+    "blueprint_methodology_version": "1.0",
+    "methodology": "Blueprint GTM by Jordan Crawford",
+    "website": "https://blueprintgtm.com",
+    "linkedin": "https://linkedin.com/in/jordancrawford"
+  },
+  "type": "object",
+  "required": [
+    "call_id",
+    "classification",
+    "account_name",
+    "call_date",
+    "participants",
+    "pain_themes",
+    "champion_profile",
+    "competitive_mentions",
+    "objection_handling",
+    "pricing_notes",
+    "sentiment_trajectory",
+    "key_quotes",
+    "summary"
+  ],
+  "properties": {
+    "call_id": {
+      "type": "string",
+      "description": "Unique identifier for the call (Gong ID, filename hash, or sequential ID)"
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "discovery",
+        "demo",
+        "negotiation",
+        "closing",
+        "onboarding",
+        "qbr",
+        "support",
+        "renewal",
+        "churn_exit",
+        "expansion",
+        "check_in",
+        "escalation",
+        "unknown"
+      ],
+      "description": "Call type classification based on content analysis"
+    },
+    "account_name": {
+      "type": "string",
+      "description": "Company or account name associated with the call"
+    },
+    "call_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the call in YYYY-MM-DD format"
+    },
+    "participants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "role"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Participant name as identified in transcript"
+          },
+          "role": {
+            "type": "string",
+            "description": "Participant role (e.g., AE, CSM, VP Sales, Champion, Economic Buyer, End User)"
+          },
+          "company": {
+            "type": "string",
+            "description": "Company the participant belongs to (seller or buyer side)"
+          },
+          "side": {
+            "type": "string",
+            "enum": ["seller", "buyer", "unknown"],
+            "description": "Which side of the deal the participant is on"
+          }
+        }
+      },
+      "description": "All identified participants in the call"
+    },
+    "pain_themes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["theme", "verbatim_quotes", "severity", "category"],
+        "properties": {
+          "theme": {
+            "type": "string",
+            "description": "Concise label for the pain theme (e.g., 'Manual reporting wastes 10+ hours/week')"
+          },
+          "verbatim_quotes": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Exact quotes from the transcript that evidence this pain theme"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"],
+            "description": "How severe this pain is based on language intensity, frequency, and business impact"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["product_gap", "service_failure", "pricing", "process", "competitor"],
+            "description": "Category of pain theme"
+          }
+        }
+      },
+      "description": "All pain points, frustrations, and challenges mentioned in the call"
+    },
+    "champion_profile": {
+      "type": "object",
+      "required": ["name", "role", "engagement_level", "signals"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the identified champion (or 'none_identified')"
+        },
+        "role": {
+          "type": "string",
+          "description": "Champion's role/title"
+        },
+        "engagement_level": {
+          "type": "string",
+          "enum": ["high", "medium", "low", "disengaged"],
+          "description": "How engaged the champion appears based on talk time, question quality, and advocacy signals"
+        },
+        "signals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Specific signals of champion behavior (e.g., 'Volunteered to schedule follow-up', 'Referenced internal advocacy')"
+        }
+      },
+      "description": "Profile of the strongest internal champion identified on the call"
+    },
+    "competitive_mentions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["competitor", "context", "verbatim_quote"],
+        "properties": {
+          "competitor": {
+            "type": "string",
+            "description": "Name of the competitor mentioned"
+          },
+          "context": {
+            "type": "string",
+            "enum": ["evaluation", "comparison", "switching_to", "switching_from", "positive", "negative"],
+            "description": "Context in which the competitor was mentioned"
+          },
+          "verbatim_quote": {
+            "type": "string",
+            "description": "Exact quote where the competitor was mentioned"
+          }
+        }
+      },
+      "description": "All mentions of competitors during the call"
+    },
+    "objection_handling": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["objection", "response", "outcome"],
+        "properties": {
+          "objection": {
+            "type": "string",
+            "description": "The objection raised by the prospect/customer"
+          },
+          "response": {
+            "type": "string",
+            "description": "How the seller responded to the objection"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": ["resolved", "unresolved", "escalated"],
+            "description": "Whether the objection was resolved, left unresolved, or escalated"
+          }
+        }
+      },
+      "description": "All objections raised and how they were handled"
+    },
+    "pricing_notes": {
+      "type": "object",
+      "required": ["mentioned", "context"],
+      "properties": {
+        "mentioned": {
+          "type": "boolean",
+          "description": "Whether pricing was discussed on the call"
+        },
+        "context": {
+          "type": "string",
+          "description": "Context of pricing discussion (e.g., 'Prospect asked for discount', 'Sticker shock on enterprise tier')"
+        },
+        "details": {
+          "type": "string",
+          "description": "Specific pricing details mentioned (amounts, tiers, comparisons)"
+        }
+      },
+      "description": "Any pricing-related discussion on the call"
+    },
+    "sentiment_trajectory": {
+      "type": "string",
+      "enum": ["improving", "stable", "declining", "volatile"],
+      "description": "Overall sentiment trajectory across the call — did the prospect/customer warm up or cool down?"
+    },
+    "key_quotes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "maxItems": 5,
+      "description": "Top 3-5 most insightful verbatim quotes from the call that capture the essence of the conversation"
+    },
+    "summary": {
+      "type": "string",
+      "description": "2-3 sentence summary of the call covering the main topic, outcome, and next steps"
+    }
+  }
+}

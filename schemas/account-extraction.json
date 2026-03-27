@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Blueprint Swarm - Account Extraction",
+  "description": "Per-account deep-dive schema for analyzing account health, churn risk, and intervention opportunities",
+  "metadata": {
+    "tool": "Blueprint Swarm",
+    "blueprint_methodology_version": "1.0",
+    "methodology": "Blueprint GTM by Jordan Crawford",
+    "website": "https://blueprintgtm.com",
+    "linkedin": "https://linkedin.com/in/jordancrawford"
+  },
+  "type": "object",
+  "required": [
+    "account_name",
+    "account_id",
+    "churn_status",
+    "churn_reason_primary",
+    "churn_reason_secondary",
+    "warning_signals",
+    "intervention_points",
+    "champion_timeline",
+    "revenue_impact",
+    "call_summary"
+  ],
+  "properties": {
+    "account_name": {
+      "type": "string",
+      "description": "Company/account name"
+    },
+    "account_id": {
+      "type": "string",
+      "description": "CRM account ID or unique identifier"
+    },
+    "churn_status": {
+      "type": "string",
+      "enum": ["churned", "at_risk", "healthy"],
+      "description": "Current churn status of the account"
+    },
+    "churn_reason_primary": {
+      "type": ["string", "null"],
+      "description": "Primary reason for churn or churn risk (null if healthy with no risk signals)"
+    },
+    "churn_reason_secondary": {
+      "type": ["string", "null"],
+      "description": "Secondary contributing factor to churn or churn risk (null if not applicable)"
+    },
+    "warning_signals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["signal", "first_appeared", "lead_time_days", "evidence"],
+        "properties": {
+          "signal": {
+            "type": "string",
+            "description": "Description of the warning signal (e.g., 'Champion stopped attending calls', 'Shifted to support-only interactions')"
+          },
+          "first_appeared": {
+            "type": "string",
+            "format": "date",
+            "description": "Date when this signal was first observed (YYYY-MM-DD)"
+          },
+          "lead_time_days": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of days between when this signal appeared and the churn/current date"
+          },
+          "evidence": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Specific evidence from calls, emails, or CRM data supporting this signal"
+          }
+        }
+      },
+      "description": "Chronological warning signals that indicated churn risk"
+    },
+    "intervention_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["when", "what", "evidence"],
+        "properties": {
+          "when": {
+            "type": "string",
+            "description": "When the intervention should have happened (date or relative timeframe)"
+          },
+          "what": {
+            "type": "string",
+            "description": "What action could have been taken to prevent or mitigate churn"
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Evidence from the data that supports this intervention point"
+          }
+        }
+      },
+      "description": "Moments where intervention could have changed the outcome"
+    },
+    "champion_timeline": {
+      "type": "object",
+      "required": ["initial_champion", "champion_status_at_churn", "replacement_attempted"],
+      "properties": {
+        "initial_champion": {
+          "type": "string",
+          "description": "Name and role of the initial champion who drove the deal"
+        },
+        "champion_status_at_churn": {
+          "type": "string",
+          "description": "Status of the champion at time of churn (e.g., 'Left company', 'Promoted out of role', 'Disengaged', 'Still active')"
+        },
+        "replacement_attempted": {
+          "type": "boolean",
+          "description": "Whether the seller attempted to identify and develop a replacement champion"
+        }
+      },
+      "description": "Timeline of champion engagement from deal close through churn"
+    },
+    "revenue_impact": {
+      "type": "object",
+      "required": ["arr", "contract_value", "expansion_potential_lost"],
+      "properties": {
+        "arr": {
+          "type": ["number", "null"],
+          "description": "Annual recurring revenue from this account (null if unknown)"
+        },
+        "contract_value": {
+          "type": ["number", "null"],
+          "description": "Total contract value (null if unknown)"
+        },
+        "expansion_potential_lost": {
+          "type": ["number", "null"],
+          "description": "Estimated expansion revenue lost due to churn (null if unknown)"
+        }
+      },
+      "description": "Revenue impact of this account's churn or risk"
+    },
+    "call_summary": {
+      "type": "string",
+      "description": "Narrative summary of the account's journey as told through the calls — from initial engagement through current state. Should read like a story with clear chronological progression."
+    }
+  }
+}

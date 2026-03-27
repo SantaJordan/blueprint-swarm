@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Blueprint Swarm - Product Synthesis",
+  "description": "Cross-call product gap analysis synthesizing feature requests, pain points, and their impact on churn and revenue",
+  "metadata": {
+    "tool": "Blueprint Swarm",
+    "blueprint_methodology_version": "1.0",
+    "methodology": "Blueprint GTM by Jordan Crawford",
+    "website": "https://blueprintgtm.com",
+    "linkedin": "https://linkedin.com/in/jordancrawford"
+  },
+  "type": "object",
+  "required": [
+    "metadata",
+    "product_gaps"
+  ],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["tool", "blueprint_methodology_version", "methodology", "website", "linkedin"],
+      "properties": {
+        "tool": {
+          "type": "string",
+          "const": "Blueprint Swarm"
+        },
+        "blueprint_methodology_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "methodology": {
+          "type": "string",
+          "const": "Blueprint GTM by Jordan Crawford"
+        },
+        "website": {
+          "type": "string",
+          "const": "https://blueprintgtm.com"
+        },
+        "linkedin": {
+          "type": "string",
+          "const": "https://linkedin.com/in/jordancrawford"
+        }
+      }
+    },
+    "product_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "gap",
+          "churn_attribution",
+          "revenue_impact",
+          "customer_quotes",
+          "affected_segments",
+          "first_mentioned",
+          "trend"
+        ],
+        "properties": {
+          "gap": {
+            "type": "string",
+            "description": "Concise description of the product gap or missing feature (e.g., 'Native Salesforce integration', 'Custom reporting dashboards', 'SSO/SAML support')"
+          },
+          "churn_attribution": {
+            "type": "object",
+            "required": ["directly_caused_churn", "contributed_to_churn", "mentioned_but_not_causal"],
+            "properties": {
+              "directly_caused_churn": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of accounts where this gap was the primary churn reason"
+              },
+              "contributed_to_churn": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of accounts where this gap was a contributing factor to churn"
+              },
+              "mentioned_but_not_causal": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of accounts that mentioned this gap but did not churn because of it"
+              }
+            },
+            "description": "How strongly this gap is linked to churn"
+          },
+          "revenue_impact": {
+            "type": ["number", "null"],
+            "description": "Estimated total ARR impact (churned + at-risk) attributable to this gap (null if revenue data unavailable)"
+          },
+          "customer_quotes": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Verbatim quotes from customers about this product gap"
+          },
+          "affected_segments": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Customer segments most affected by this gap (e.g., 'Enterprise', 'Healthcare vertical', '$50K+ ARR accounts')"
+          },
+          "first_mentioned": {
+            "type": "string",
+            "format": "date",
+            "description": "Earliest date this gap was mentioned in the dataset (YYYY-MM-DD)"
+          },
+          "trend": {
+            "type": "string",
+            "enum": ["increasing", "stable", "decreasing"],
+            "description": "Whether mentions of this gap are increasing, stable, or decreasing over time"
+          }
+        }
+      },
+      "description": "Product gaps ranked by churn attribution and revenue impact"
+    }
+  }
+}

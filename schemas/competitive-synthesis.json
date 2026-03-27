@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Blueprint Swarm - Competitive Synthesis",
+  "description": "Cross-call competitive intelligence synthesis aggregating all competitor mentions, positioning, and win rates",
+  "metadata": {
+    "tool": "Blueprint Swarm",
+    "blueprint_methodology_version": "1.0",
+    "methodology": "Blueprint GTM by Jordan Crawford",
+    "website": "https://blueprintgtm.com",
+    "linkedin": "https://linkedin.com/in/jordancrawford"
+  },
+  "type": "object",
+  "required": [
+    "metadata",
+    "competitors",
+    "competitive_landscape_summary"
+  ],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["tool", "blueprint_methodology_version", "methodology", "website", "linkedin"],
+      "properties": {
+        "tool": {
+          "type": "string",
+          "const": "Blueprint Swarm"
+        },
+        "blueprint_methodology_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "methodology": {
+          "type": "string",
+          "const": "Blueprint GTM by Jordan Crawford"
+        },
+        "website": {
+          "type": "string",
+          "const": "https://blueprintgtm.com"
+        },
+        "linkedin": {
+          "type": "string",
+          "const": "https://linkedin.com/in/jordancrawford"
+        }
+      }
+    },
+    "competitors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "total_mentions",
+          "contexts",
+          "win_rate_when_mentioned",
+          "common_positioning",
+          "key_quotes"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Competitor name as mentioned in calls"
+          },
+          "total_mentions": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Total number of calls where this competitor was mentioned"
+          },
+          "contexts": {
+            "type": "object",
+            "required": ["evaluation", "comparison", "switching_to", "switching_from", "positive", "negative"],
+            "properties": {
+              "evaluation": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of mentions in an active evaluation context (prospect evaluating both)"
+              },
+              "comparison": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of mentions comparing features or capabilities"
+              },
+              "switching_to": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of mentions where customer/prospect is switching TO this competitor"
+              },
+              "switching_from": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of mentions where customer/prospect is switching FROM this competitor"
+              },
+              "positive": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of mentions with positive sentiment about the competitor"
+              },
+              "negative": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of mentions with negative sentiment about the competitor"
+              }
+            },
+            "description": "Breakdown of mention contexts for this competitor"
+          },
+          "win_rate_when_mentioned": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Win rate (%) when this competitor is mentioned in the deal (null if insufficient data)"
+          },
+          "common_positioning": {
+            "type": "string",
+            "description": "How prospects typically position this competitor relative to the seller (e.g., 'Cheaper but less feature-rich', 'Enterprise incumbent we need to displace')"
+          },
+          "key_quotes": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Most revealing verbatim quotes about this competitor from calls"
+          }
+        }
+      },
+      "description": "All competitors mentioned across calls, ranked by total mentions"
+    },
+    "competitive_landscape_summary": {
+      "type": "string",
+      "description": "Executive-level narrative summarizing the competitive landscape — key battlegrounds, positioning effectiveness, and strategic recommendations"
+    }
+  }
+}

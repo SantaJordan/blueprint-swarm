@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{REPORT_TITLE}} — Blueprint Swarm</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=Fraunces:wght@700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* ─── Color System ─── */
+        :root {
+            --bg-primary: #0F0720;
+            --bg-card: #211440;
+            --bg-card-hover: #2A1B50;
+            --bg-input: #1A0E30;
+            --text-primary: #F5F8FF;
+            --text-secondary: #B8B0CC;
+            --text-muted: #7A7190;
+            --accent-purple: #8B5CF6;
+            --accent-purple-dim: #6D3FD9;
+            --accent-yellow: #FFF277;
+            --accent-yellow-dim: #D4C85F;
+            --signal-red: #EF4444;
+            --signal-red-bg: rgba(239, 68, 68, 0.12);
+            --signal-green: #22C55E;
+            --signal-green-bg: rgba(34, 197, 94, 0.12);
+            --border-subtle: rgba(139, 92, 246, 0.15);
+            --border-active: rgba(139, 92, 246, 0.4);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+
+        /* ─── Reset & Base ─── */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Onest', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.65;
+            font-size: 15px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ─── Header ─── */
+        .blueprint-header {
+            padding: 2rem 2rem 1.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .blueprint-wordmark {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .blueprint-wordmark-title {
+            font-family: 'Fraunces', Georgia, serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--accent-yellow) 0%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .blueprint-wordmark-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        .blueprint-wordmark-sub a {
+            color: var(--accent-purple);
+            text-decoration: none;
+        }
+
+        .blueprint-wordmark-sub a:hover { text-decoration: underline; }
+
+        .blueprint-header-meta {
+            text-align: right;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* ─── Tab Navigation ─── */
+        .blueprint-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 0 2rem;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .blueprint-tab {
+            padding: 0.85rem 1.3rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .blueprint-tab:hover { color: var(--text-secondary); }
+
+        .blueprint-tab.active {
+            color: var(--accent-yellow);
+            border-bottom-color: var(--accent-yellow);
+        }
+
+        /* ─── Content Area ─── */
+        .blueprint-content {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1100px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .blueprint-panel { display: none; }
+        .blueprint-panel.active { display: block; }
+
+        /* ─── Section Headings ─── */
+        .blueprint-section-title {
+            font-family: 'Fraunces', Georgia, serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .blueprint-section-subtitle {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--accent-purple);
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.4rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        /* ─── Cards ─── */
+        .blueprint-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: border-color 0.2s, background 0.15s;
+        }
+
+        .blueprint-card:hover {
+            border-color: var(--border-active);
+            background: var(--bg-card-hover);
+        }
+
+        .blueprint-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .blueprint-card-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .blueprint-card-body {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            line-height: 1.7;
+        }
+
+        .blueprint-card-body p + p { margin-top: 0.75rem; }
+
+        .blueprint-card-expand {
+            font-size: 0.78rem;
+            color: var(--accent-purple);
+            cursor: pointer;
+            margin-top: 0.6rem;
+            font-weight: 600;
+            user-select: none;
+        }
+
+        .blueprint-card-expand:hover { color: var(--accent-yellow); }
+
+        .blueprint-card-detail {
+            display: none;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .blueprint-card-detail.open { display: block; }
+
+        /* ─── Quote Cards ─── */
+        .blueprint-quote {
+            background: var(--bg-card);
+            border-left: 3px solid var(--accent-yellow);
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.85rem;
+            font-style: italic;
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            line-height: 1.7;
+        }
+
+        .blueprint-quote.signal-churn {
+            border-left-color: var(--signal-red);
+        }
+
+        .blueprint-quote.signal-win {
+            border-left-color: var(--signal-green);
+        }
+
+        .blueprint-quote.signal-competitive {
+            border-left-color: var(--accent-purple);
+        }
+
+        .blueprint-quote-attribution {
+            font-style: normal;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+
+        /* ─── Signal Indicators ─── */
+        .blueprint-signal {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 0.2rem 0.6rem;
+            border-radius: 99px;
+        }
+
+        .blueprint-signal.buy { background: var(--signal-green-bg); color: var(--signal-green); }
+        .blueprint-signal.churn { background: var(--signal-red-bg); color: var(--signal-red); }
+        .blueprint-signal.competitive { background: rgba(139, 92, 246, 0.12); color: var(--accent-purple); }
+
+        /* ─── Badges ─── */
+        .blueprint-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 0.2rem 0.55rem;
+            border-radius: var(--radius-sm);
+        }
+
+        .blueprint-badge.high {
+            background: var(--accent-yellow);
+            color: var(--bg-primary);
+        }
+
+        .blueprint-badge.medium {
+            background: var(--accent-purple);
+            color: var(--text-primary);
+        }
+
+        .blueprint-badge.low {
+            background: rgba(122, 113, 144, 0.3);
+            color: var(--text-muted);
+        }
+
+        /* ─── Summary Bullets ─── */
+        .blueprint-summary-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .blueprint-summary-list li {
+            padding: 0.65rem 0;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+        }
+
+        .blueprint-summary-list li::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: var(--accent-purple);
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 0.55rem;
+        }
+
+        .blueprint-summary-list li:last-child { border-bottom: none; }
+
+        /* ─── Stats Row ─── */
+        .blueprint-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .blueprint-stat {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 1.1rem;
+            text-align: center;
+        }
+
+        .blueprint-stat-value {
+            font-family: 'Fraunces', Georgia, serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--accent-yellow);
+        }
+
+        .blueprint-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-top: 0.2rem;
+        }
+
+        /* ─── Source Explorer Table ─── */
+        .blueprint-search {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .blueprint-search input,
+        .blueprint-search select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 0.55rem 0.85rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .blueprint-search input:focus,
+        .blueprint-search select:focus {
+            border-color: var(--accent-purple);
+        }
+
+        .blueprint-search input { flex: 1; min-width: 200px; }
+
+        .blueprint-table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+        }
+
+        .blueprint-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .blueprint-table th {
+            background: var(--bg-card);
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-subtle);
+            position: sticky;
+            top: 0;
+        }
+
+        .blueprint-table td {
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            vertical-align: top;
+        }
+
+        .blueprint-table tr:last-child td { border-bottom: none; }
+
+        .blueprint-table tr:hover td { background: rgba(139, 92, 246, 0.04); }
+
+        .blueprint-table .quote-cell {
+            max-width: 400px;
+            font-style: italic;
+            font-size: 0.82rem;
+            line-height: 1.6;
+        }
+
+        /* ─── About Section ─── */
+        .blueprint-about {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .blueprint-about-bio { line-height: 1.8; color: var(--text-secondary); }
+
+        .blueprint-about-bio a {
+            color: var(--accent-purple);
+            text-decoration: none;
+        }
+
+        .blueprint-about-bio a:hover { text-decoration: underline; }
+
+        /* ─── Footer ─── */
+        .blueprint-footer {
+            padding: 1.25rem 2rem;
+            border-top: 1px solid var(--border-subtle);
+            text-align: center;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: auto;
+        }
+
+        .blueprint-footer a {
+            color: var(--accent-purple);
+            text-decoration: none;
+        }
+
+        .blueprint-footer a:hover { text-decoration: underline; }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 768px) {
+            .blueprint-header { padding: 1.25rem; }
+            .blueprint-tabs { padding: 0 1rem; }
+            .blueprint-content { padding: 1.25rem; }
+            .blueprint-wordmark-title { font-size: 1.3rem; }
+            .blueprint-section-title { font-size: 1.25rem; }
+            .blueprint-about { grid-template-columns: 1fr; }
+            .blueprint-stats { grid-template-columns: repeat(2, 1fr); }
+            .blueprint-card { padding: 1.15rem; }
+            .blueprint-header-meta { display: none; }
+        }
+
+        @media (max-width: 480px) {
+            .blueprint-stats { grid-template-columns: 1fr; }
+            .blueprint-tab { padding: 0.7rem 0.9rem; font-size: 0.8rem; }
+        }
+
+        /* ─── Print Stylesheet ─── */
+        @media print {
+            body { background: #fff; color: #1a1a1a; font-size: 11pt; }
+            .blueprint-header { border-bottom: 2px solid #1a1a1a; }
+            .blueprint-wordmark-title {
+                background: none;
+                -webkit-text-fill-color: #1a1a1a;
+                color: #1a1a1a;
+            }
+            .blueprint-tabs { display: none; }
+            .blueprint-panel { display: block !important; page-break-inside: avoid; }
+            .blueprint-panel + .blueprint-panel { margin-top: 2rem; border-top: 1px solid #ccc; padding-top: 1.5rem; }
+            .blueprint-card { background: #f9f9f9; border: 1px solid #ddd; }
+            .blueprint-card-detail { display: block !important; }
+            .blueprint-quote { background: #f5f5f5; border-left-color: #666; }
+            .blueprint-badge.high { background: #eee; color: #333; }
+            .blueprint-badge.medium { background: #e0e0e0; color: #333; }
+            .blueprint-stat { background: #f5f5f5; border-color: #ddd; }
+            .blueprint-stat-value { color: #1a1a1a; }
+            .blueprint-footer { border-top: 1px solid #ccc; color: #666; }
+            .blueprint-search { display: none; }
+            a { color: #333; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ─── Header ─── -->
+    <header class="blueprint-header">
+        <div class="blueprint-wordmark">
+            <div class="blueprint-wordmark-title">BLUEPRINT SWARM</div>
+            <div class="blueprint-wordmark-sub">by Jordan Crawford &middot; <a href="https://blueprintgtm.com" target="_blank">blueprintgtm.com</a></div>
+        </div>
+        <div class="blueprint-header-meta">
+            {{REPORT_TITLE}}<br>
+            {{GENERATED_DATE}} &middot; {{TOTAL_CALLS}} calls analyzed
+        </div>
+    </header>
+
+    <!-- ─── Tab Navigation ─── -->
+    <nav class="blueprint-tabs" role="tablist">
+        <div class="blueprint-tab active" role="tab" data-tab="summary">Executive Summary</div>
+        <div class="blueprint-tab" role="tab" data-tab="analysis">Analysis Results</div>
+        <div class="blueprint-tab" role="tab" data-tab="sources">Source Explorer</div>
+        <div class="blueprint-tab" role="tab" data-tab="methodology">Methodology</div>
+        <div class="blueprint-tab" role="tab" data-tab="about">About</div>
+    </nav>
+
+    <!-- ─── Content ─── -->
+    <main class="blueprint-content">
+
+        <!-- ── Executive Summary ── -->
+        <section class="blueprint-panel active" id="panel-summary">
+            <h2 class="blueprint-section-title">Executive Summary</h2>
+
+            <div class="blueprint-stats">
+                <div class="blueprint-stat">
+                    <div class="blueprint-stat-value">{{TOTAL_CALLS}}</div>
+                    <div class="blueprint-stat-label">Calls Analyzed</div>
+                </div>
+                <div class="blueprint-stat">
+                    <div class="blueprint-stat-value">{{TOTAL_ACCOUNTS}}</div>
+                    <div class="blueprint-stat-label">Accounts</div>
+                </div>
+                <div class="blueprint-stat">
+                    <div class="blueprint-stat-value">{{TOTAL_FINDINGS}}</div>
+                    <div class="blueprint-stat-label">Key Findings</div>
+                </div>
+                <div class="blueprint-stat">
+                    <div class="blueprint-stat-value">{{TOTAL_QUOTES}}</div>
+                    <div class="blueprint-stat-label">Source Quotes</div>
+                </div>
+            </div>
+
+            <ul class="blueprint-summary-list">
+                {{EXECUTIVE_SUMMARY_ITEMS}}
+            </ul>
+
+            <h3 class="blueprint-section-subtitle">Top Findings</h3>
+
+            {{#EACH FINDING}}
+            <div class="blueprint-card">
+                <div class="blueprint-card-header">
+                    <div class="blueprint-card-title">{{FINDING_TITLE}}</div>
+                    <span class="blueprint-badge {{CONFIDENCE_CLASS}}">{{CONFIDENCE_LABEL}}</span>
+                </div>
+                <div class="blueprint-card-body">
+                    <p>{{FINDING_DESCRIPTION}}</p>
+                </div>
+                <div class="blueprint-quote {{QUOTE_SIGNAL_CLASS}}">
+                    "{{KEY_QUOTE}}"
+                    <div class="blueprint-quote-attribution">{{QUOTE_SPEAKER}} &mdash; {{QUOTE_CONTEXT}}</div>
+                </div>
+                <div class="blueprint-card-expand" onclick="toggleDetail(this)">Show evidence +</div>
+                <div class="blueprint-card-detail">
+                    {{FINDING_EVIDENCE}}
+                </div>
+            </div>
+            {{/EACH}}
+        </section>
+
+        <!-- ── Analysis Results ── -->
+        <section class="blueprint-panel" id="panel-analysis">
+            <h2 class="blueprint-section-title">Analysis Results</h2>
+
+            {{#SECTION CHURN}}
+            <h3 class="blueprint-section-subtitle">Churn Intelligence</h3>
+            <p class="blueprint-card-body" style="margin-bottom:1rem;">Warning signals &mdash; the moments where intervention could have saved the account.</p>
+            {{CHURN_CARDS}}
+            {{/SECTION}}
+
+            {{#SECTION WINS}}
+            <h3 class="blueprint-section-subtitle">Win Patterns</h3>
+            <p class="blueprint-card-body" style="margin-bottom:1rem;">Pain-qualified segmentation &mdash; specific pains that predict buying.</p>
+            {{WIN_CARDS}}
+            {{/SECTION}}
+
+            {{#SECTION COMPETITIVE}}
+            <h3 class="blueprint-section-subtitle">Competitive Intelligence</h3>
+            {{COMPETITIVE_CARDS}}
+            {{/SECTION}}
+
+            {{#SECTION PRODUCT}}
+            <h3 class="blueprint-section-subtitle">Product Gap Analysis</h3>
+            {{PRODUCT_CARDS}}
+            {{/SECTION}}
+
+            {{#SECTION PLAYBOOK}}
+            <h3 class="blueprint-section-subtitle">Sales Playbook</h3>
+            {{PLAYBOOK_CARDS}}
+            {{/SECTION}}
+
+            {{#SECTION ACCOUNT_HEALTH}}
+            <h3 class="blueprint-section-subtitle">Account Health</h3>
+            {{ACCOUNT_HEALTH_CARDS}}
+            {{/SECTION}}
+        </section>
+
+        <!-- ── Source Explorer ── -->
+        <section class="blueprint-panel" id="panel-sources">
+            <h2 class="blueprint-section-title">Source Explorer</h2>
+
+            <div class="blueprint-search">
+                <input type="text" id="quote-search" placeholder="Search quotes, accounts, themes..." oninput="filterSources()">
+                <select id="signal-filter" onchange="filterSources()">
+                    <option value="all">All signals</option>
+                    <option value="buy">Buy signals</option>
+                    <option value="churn">Churn signals</option>
+                    <option value="competitive">Competitive</option>
+                    <option value="product">Product gap</option>
+                </select>
+                <select id="confidence-filter" onchange="filterSources()">
+                    <option value="all">All confidence</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+            </div>
+
+            <div class="blueprint-table-wrap">
+                <table class="blueprint-table" id="source-table">
+                    <thead>
+                        <tr>
+                            <th>Account</th>
+                            <th>Signal</th>
+                            <th>Quote</th>
+                            <th>Speaker</th>
+                            <th>Confidence</th>
+                            <th>Module</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{SOURCE_TABLE_ROWS}}
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="no-results" style="display:none; text-align:center; padding:2rem; color:var(--text-muted);">
+                No quotes match your filters.
+            </div>
+        </section>
+
+        <!-- ── Methodology ── -->
+        <section class="blueprint-panel" id="panel-methodology">
+            <h2 class="blueprint-section-title">Methodology</h2>
+
+            <div class="blueprint-card">
+                <div class="blueprint-card-title">Swarm Configuration</div>
+                <div class="blueprint-card-body" style="margin-top:0.75rem;">
+                    <p><strong>Modules executed:</strong> {{MODULES_LIST}}</p>
+                    <p><strong>Agents dispatched:</strong> {{AGENT_COUNT}}</p>
+                    <p><strong>Extraction schema:</strong> call-extraction.json v{{SCHEMA_VERSION}}</p>
+                    <p><strong>Audit pass:</strong> {{AUDIT_STATUS}}</p>
+                </div>
+            </div>
+
+            <div class="blueprint-card">
+                <div class="blueprint-card-title">Data Sources</div>
+                <div class="blueprint-card-body" style="margin-top:0.75rem;">
+                    <p><strong>Files analyzed:</strong> {{FILE_COUNT}}</p>
+                    <p><strong>Total calls:</strong> {{TOTAL_CALLS}}</p>
+                    <p><strong>Date range:</strong> {{DATE_RANGE}}</p>
+                    <p><strong>Transcript format:</strong> {{TRANSCRIPT_FORMAT}}</p>
+                </div>
+            </div>
+
+            <div class="blueprint-card">
+                <div class="blueprint-card-title">Quality Notes</div>
+                <div class="blueprint-card-body" style="margin-top:0.75rem;">
+                    {{QUALITY_NOTES}}
+                </div>
+            </div>
+        </section>
+
+        <!-- ── About ── -->
+        <section class="blueprint-panel" id="panel-about">
+            <h2 class="blueprint-section-title">About</h2>
+
+            <div class="blueprint-about">
+                <div>
+                    <div class="blueprint-card">
+                        <div class="blueprint-card-title">Blueprint GTM Methodology</div>
+                        <div class="blueprint-card-body" style="margin-top:0.75rem;">
+                            <p>Blueprint GTM is a data-driven approach to go-to-market strategy that starts with what customers actually say, not what we assume they care about.</p>
+                            <p>The core principle is <strong>pain-qualified segmentation</strong>: instead of targeting companies by size or industry, Blueprint identifies the specific pains that predict buying behavior. Every recommendation in this report is grounded in verbatim evidence from real conversations.</p>
+                            <p>Blueprint Swarm extends this methodology with agentic analysis. A swarm of specialized AI agents processes call transcripts in parallel, each focused on a specific intelligence domain. An audit layer validates every extraction against the source material. The result is comprehensive intelligence that would take a human team weeks, delivered in minutes.</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="blueprint-card">
+                        <div class="blueprint-card-title">Jordan Crawford</div>
+                        <div class="blueprint-card-body blueprint-about-bio" style="margin-top:0.75rem;">
+                            <p>Jordan Crawford is the founder of Blueprint GTM, where he helps B2B companies build their go-to-market strategy from customer evidence instead of assumptions.</p>
+                            <p>His work focuses on turning unstructured sales and customer success conversations into actionable intelligence for sales, marketing, and product teams.</p>
+                            <p>
+                                <a href="https://linkedin.com/in/jordancrawford" target="_blank">Connect on LinkedIn</a>
+                                &middot;
+                                <a href="https://blueprintgtm.com" target="_blank">blueprintgtm.com</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ─── Footer ─── -->
+    <footer class="blueprint-footer">
+        Blueprint Swarm by Jordan Crawford
+        &middot; <a href="https://blueprintgtm.com" target="_blank">blueprintgtm.com</a>
+        &middot; <a href="https://linkedin.com/in/jordancrawford" target="_blank">Connect on LinkedIn</a>
+    </footer>
+
+    <!-- ─── JavaScript ─── -->
+    <script>
+        /* Tab switching */
+        document.querySelectorAll('.blueprint-tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.blueprint-tab').forEach(function(t) { t.classList.remove('active'); });
+                document.querySelectorAll('.blueprint-panel').forEach(function(p) { p.classList.remove('active'); });
+                tab.classList.add('active');
+                var panelId = 'panel-' + tab.getAttribute('data-tab');
+                var panel = document.getElementById(panelId);
+                if (panel) panel.classList.add('active');
+            });
+        });
+
+        /* Card detail expansion */
+        function toggleDetail(el) {
+            var detail = el.nextElementSibling;
+            if (!detail) return;
+            var isOpen = detail.classList.toggle('open');
+            el.textContent = isOpen ? 'Hide evidence -' : 'Show evidence +';
+        }
+
+        /* Source Explorer search and filter */
+        function filterSources() {
+            var query = document.getElementById('quote-search').value.toLowerCase();
+            var signal = document.getElementById('signal-filter').value;
+            var confidence = document.getElementById('confidence-filter').value;
+            var rows = document.querySelectorAll('#source-table tbody tr');
+            var visibleCount = 0;
+
+            rows.forEach(function(row) {
+                var text = row.textContent.toLowerCase();
+                var rowSignal = row.getAttribute('data-signal') || '';
+                var rowConfidence = row.getAttribute('data-confidence') || '';
+
+                var matchText = !query || text.indexOf(query) !== -1;
+                var matchSignal = signal === 'all' || rowSignal === signal;
+                var matchConfidence = confidence === 'all' || rowConfidence === confidence;
+
+                if (matchText && matchSignal && matchConfidence) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            var noResults = document.getElementById('no-results');
+            var tableWrap = document.querySelector('.blueprint-table-wrap');
+            if (visibleCount === 0) {
+                noResults.style.display = 'block';
+                tableWrap.style.display = 'none';
+            } else {
+                noResults.style.display = 'none';
+                tableWrap.style.display = '';
+            }
+        }
+    </script>
+
+</body>
+</html>
