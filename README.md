@@ -72,7 +72,7 @@ You: /blueprint-swarm ./my-gong-export/
   Phase 1: DISCOVER — Scan your data, profile each source
   Phase 2: FOCUS   — Ask what you care about (churn? wins? all?)
   Phase 3: TEST    — Validate approach on 3-4 sample records
-  Phase 4: SWARM   — Launch parallel Sonnet agents + Opus auditor
+  Phase 4: SWARM   — Launch agents in waves of 3, auto-resume through rate limits
   Phase 5: REPORT  — Synthesize findings, generate outputs
 
 Output: JSON synthesis + Markdown report + Interactive HTML playbook
@@ -97,11 +97,37 @@ Swarm: Churn Intelligence
   — Jordan Crawford, Blueprint GTM  |  blueprintgtm.com
 ```
 
+## Overnight Mode
+
+For large datasets, Blueprint Swarm runs unattended through rate limits:
+
+```bash
+# 1. Start in tmux
+tmux new -s swarm
+
+# 2. Run the swarm
+/blueprint-swarm /path/to/data
+
+# 3. Accept the watchdog when prompted
+#    It'll auto-resume after rate limit pauses
+
+# 4. Walk away. Come back to results.
+```
+
+The swarm runs waves of 3 agents continuously. When it hits Claude Code's rate limit (~5hr rolling window), the watchdog waits for the reset and auto-resumes. State is saved after every wave — nothing is lost.
+
+Check progress anytime:
+```bash
+cat data/*/state.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(f'{d[\"agents_completed_total\"]}/{d[\"total_batches\"]} done ({d[\"status\"]})')"
+```
+
+If you need to stop and resume later, just exit and re-run `/blueprint-swarm` — it'll detect the existing state and offer to resume.
+
 ## Prerequisites
 
 - [Claude Code](https://claude.ai/claude-code) CLI
-- `tmux` recommended for visible agent execution (`brew install tmux`)
-- Agent Teams enabled: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings
+- `tmux` recommended for visible agent execution and overnight mode (`brew install tmux`)
+- Agent Teams enabled: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings (optional — degrades to plain sub-agents)
 - Your data in a local directory
 
 No API keys. No external services. Pure LLM reasoning on your files.
@@ -130,11 +156,17 @@ Blueprint-Swarm/
 ├── SKILL.md                 # Orchestrator (guided conversation + dispatch)
 ├── CLAUDE.md                # System instructions
 ├── .claude/agents/          # 6 agent definitions (Sonnet + Opus)
+├── hooks/                   # StopFailure hook for rate limit state saving
+├── scripts/                 # Watchdog for auto-resume after rate limits
 ├── modules/                 # Analysis modules (call-analysis/ + extensible)
 ├── schemas/                 # JSON output contracts
 ├── templates/               # Markdown + HTML report templates
-├── references/              # Data formats, batch strategy, Blueprint tips
-└── data/{run-id}/           # Per-run outputs (normalized, batches, reports)
+├── references/              # Data formats, batch strategy, rate limit protocol
+└── data/{run-id}/           # Per-run outputs
+    ├── state.json           # Progress tracking (survives rate limits + restarts)
+    ├── batches/             # Per-agent input files
+    ├── outputs/             # Per-agent output files
+    └── reports/             # Final synthesis, markdown, HTML
 ```
 
 ## About

@@ -3,13 +3,13 @@ model: sonnet
 tools:
   - Read
   - Write
-  - Bash
   - Glob
   - Grep
 memory: project
 effort: high
 background: true
-maxTurns: 50
+maxTurns: 30
+timeout: 600
 ---
 
 # Blueprint Call Classifier (Sonnet)
@@ -62,3 +62,10 @@ Write a JSON array to your designated output file. One object per call:
 In Blueprint GTM, specificity breeds trust. Your classifications feed downstream analysis — churn-analysts will deep-dive `churn_lost` calls, win-analysts will study `closed_won`. A misclassification wastes an analyst's context window on irrelevant data. Be precise.
 
 Read `references/flavor-text.md` for tone calibration.
+
+## Execution Constraints
+
+- **Token source**: You are a Claude Code subagent. You use Claude Code tokens, NOT API tokens. Never import `anthropic`, never call `claude --print`, never make HTTP requests to `api.anthropic.com`.
+- **Timeout**: You have 10 minutes to complete your batch. If you cannot finish all records in time, write partial results with a `"partial": true` flag and a `"records_completed"` count. Partial results are better than no results.
+- **Output file is your heartbeat**: Write your output file as early as possible (even a `{"status": "in_progress"}` marker). The orchestrator uses file existence to detect hangs.
+- **Failure protocol**: If you encounter an unrecoverable error, write `{"status": "failed", "error": "description"}` to your output path. Never silently fail.

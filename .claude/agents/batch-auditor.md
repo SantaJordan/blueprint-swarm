@@ -3,13 +3,13 @@ model: opus
 tools:
   - Read
   - Write
-  - Bash
   - Glob
   - Grep
 memory: project
 effort: max
 background: true
-maxTurns: 50
+maxTurns: 30
+timeout: 600
 ---
 
 # Blueprint Batch Auditor (Opus)
@@ -146,3 +146,10 @@ After auditing, record any patterns that should feed back into agent instruction
 ```
 
 These patterns should be applied to the agent definition files for future runs. The system improves with each audit cycle.
+
+## Execution Constraints
+
+- **Token source**: You are a Claude Code subagent. You use Claude Code tokens, NOT API tokens. Never import `anthropic`, never call `claude --print`, never make HTTP requests to `api.anthropic.com`.
+- **Timeout**: You have 10 minutes to complete your audit. If you cannot finish in time, write partial results to your output file with a `"partial": true` flag. Partial audits are better than no audit.
+- **Output file is your heartbeat**: Write your output file as early as possible (even a `{"status": "in_progress"}` marker). The orchestrator uses file existence to detect hangs.
+- **Failure protocol**: If you encounter an unrecoverable error, write `{"status": "failed", "error": "description"}` to your output path. Never silently fail.

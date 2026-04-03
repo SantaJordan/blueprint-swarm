@@ -142,6 +142,46 @@ Produces final synthesis reports
 | 10,000 calls | 67 | 100 | 20 | 1 |
 | 50,000 calls | 335 | 500 | 100 → 5 | 1 |
 
+## Wall Clock Estimates (with Auto-Resume Watchdog)
+
+The Progressive Reduction Schedule above shows TOTAL agents needed. This section shows realistic wall clock time including rate limit pauses.
+
+Claude Code rate limits use a 5-hour rolling window. The watchdog script (`scripts/swarm-watchdog.sh`) auto-resumes after each rate limit pause, enabling fully unattended overnight execution.
+
+| Dataset Size | Total Agents | Rate Limit Pauses | Est. Wall Clock | Overnight? |
+|-------------|-------------|-------------------|----------------|:----------:|
+| 100 calls | 3-5 | 0 | ~15 min | No need |
+| 500 calls | 10-15 | 0-1 | 1-2 hours | No need |
+| 1,000 calls | 20-25 | 1-2 | 3-6 hours | Optional |
+| 5,000 calls | 50-70 | 3-5 | 15-25 hours | Yes |
+| 10,000 calls | 100-120 | 6-8 | 30-40 hours | Yes |
+| 50,000 calls | 440+ | 25+ | 5-7 days | Yes |
+
+**Rule of thumb**: Start before bed for datasets up to ~5K calls. Expect results by morning.
+
+### Wave Execution Model
+
+Agents launch in waves of 3 (rate limit pool is shared between agents and orchestrator):
+
+```
+Session 1 (runs until rate limited):
+  Wave 1: classify-001, classify-002, classify-003  → ~7 min
+  Wave 2: classify-004, extract-001, extract-002    → ~7 min
+  Wave 3: extract-003, extract-004, extract-005     → ~7 min
+  ...
+  Wave N: [rate limited] → state saved, watchdog waits for reset
+
+  ⏸ Rate limit pause (~5 hours)
+
+Session 2 (auto-resumed by watchdog):
+  Wave N+1: extract-006, extract-007, extract-008   → ~7 min
+  ...continues until done or rate-limited again...
+```
+
+### Adjusting for Your Plan Tier
+
+The default wave size of 3 works for all plan tiers. If you're on a higher tier with more generous limits, you can experiment with wave size 4-5 by modifying `wave_size` in `state.json`. Reduce to 2 if experiencing frequent timeouts.
+
 ## Format Hierarchy for Token Efficiency
 
 When space is tight, compress data using these formats (most to least efficient):
@@ -194,6 +234,12 @@ Only use when: The agent needs to perform its own column detection/mapping
 6. IF total_tokens > 50M:
      → Progressive batching with 2-level reduction
      → Consider sampling strategy (analyze 20% representative sample first)
+7. Calculate wall clock estimate:
+     total_agents = classification_agents + extraction_agents + synth_agents + 1 (auditor)
+     rate_limit_pauses = floor(total_agents / 15)  (rough estimate)
+     wall_hours = (total_agents * 7 / 60) + (rate_limit_pauses * 5)
+     → Report to user: "This will take approximately {wall_hours} hours.
+        Recommend starting the watchdog for overnight execution."
 ```
 
 ## Sampling Strategy for Massive Datasets

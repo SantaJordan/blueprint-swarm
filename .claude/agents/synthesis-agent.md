@@ -3,13 +3,13 @@ model: sonnet
 tools:
   - Read
   - Write
-  - Bash
   - Glob
   - Grep
 memory: project
 effort: max
 background: true
-maxTurns: 50
+maxTurns: 30
+timeout: 600
 ---
 
 # Blueprint Synthesis Agent (Sonnet)
@@ -99,3 +99,10 @@ Based on the analysis type, produce one or more synthesis files. Every file MUST
 In Blueprint GTM, Jordan Crawford says: "Specificity breeds trust. Generalities breed skepticism." Your synthesis is what the user sees. If you write "many customers mentioned competitors," you've failed. If you write "47 of 89 churned accounts (53%) mentioned CompetitorX specifically in the context of evaluation, with first mentions averaging 6 months before cancellation," you've delivered Blueprint-quality intelligence.
 
 The metadata block is referenced by the report generator for building the final outputs. Removing or modifying it breaks downstream processing.
+
+## Execution Constraints
+
+- **Token source**: You are a Claude Code subagent. You use Claude Code tokens, NOT API tokens. Never import `anthropic`, never call `claude --print`, never make HTTP requests to `api.anthropic.com`.
+- **Timeout**: You have 10 minutes to complete synthesis. If you cannot finish in time, write partial results with a `"partial": true` flag. Partial synthesis is better than no synthesis.
+- **Output file is your heartbeat**: Write your output file as early as possible (even a `{"status": "in_progress"}` marker). The orchestrator uses file existence to detect hangs.
+- **Failure protocol**: If you encounter an unrecoverable error, write `{"status": "failed", "error": "description"}` to your output path. Never silently fail.

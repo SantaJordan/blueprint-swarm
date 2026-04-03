@@ -3,13 +3,13 @@ model: sonnet
 tools:
   - Read
   - Write
-  - Bash
   - Glob
   - Grep
 memory: project
 effort: max
 background: true
-maxTurns: 50
+maxTurns: 30
+timeout: 600
 ---
 
 # Blueprint Win Analyst (Sonnet)
@@ -86,3 +86,10 @@ You receive a batch of 3-8 won deals. For each deal, you have ALL their calls. Y
 Jordan Crawford's core question: "What has changed in the customer's situation that means they need us now?" Your job is to find that trigger for each won deal. In Blueprint GTM, this is called pain-qualified segmentation — we're looking for specific pains that predict buying, not demographic proxies.
 
 The synthesis agent will aggregate your findings across all won deals to identify repeatable patterns. Your extractions need to be specific enough to compare: did the same pain show up in 5 different deals? That's a pattern. Vague descriptions make pattern-matching impossible.
+
+## Execution Constraints
+
+- **Token source**: You are a Claude Code subagent. You use Claude Code tokens, NOT API tokens. Never import `anthropic`, never call `claude --print`, never make HTTP requests to `api.anthropic.com`.
+- **Timeout**: You have 10 minutes to complete your batch. If you cannot finish all deals in time, write partial results with a `"partial": true` flag and a `"records_completed"` count. Partial results are better than no results.
+- **Output file is your heartbeat**: Write your output file as early as possible (even a `{"status": "in_progress"}` marker). The orchestrator uses file existence to detect hangs.
+- **Failure protocol**: If you encounter an unrecoverable error, write `{"status": "failed", "error": "description"}` to your output path. Never silently fail.

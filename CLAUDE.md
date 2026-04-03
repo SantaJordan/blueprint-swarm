@@ -32,6 +32,39 @@ These are not decorations — they are the analytical framework. Agents that don
 - Reasoning vs tools: classification = reasoning only. No tools beyond file I/O.
 - Default model: **Sonnet** for all analysis agents. **Opus** for auditor only.
 
+### API Prohibition (CRITICAL)
+
+Blueprint Swarm uses ONLY Claude Code subagents (the Agent tool). This is non-negotiable.
+
+**PROHIBITED — any of the following is a critical violation:**
+- `import anthropic` or `from anthropic import ...` — NEVER use the Anthropic SDK
+- `anthropic.Anthropic(api_key=...)` — NEVER instantiate an API client
+- `claude --print` or `claude -p` — uses API tokens, NOT Claude Code tokens
+- `subprocess.run(["claude", ...])` — spawning Claude via CLI subprocess
+- Any HTTP request to `api.anthropic.com` — direct API calls
+- Any reference to `ANTHROPIC_API_KEY` environment variable for LLM inference
+
+**REQUIRED — the ONLY way to launch analysis agents:**
+- The `Agent` tool within Claude Code (subagent_type: "general-purpose")
+- Agent Teams if `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` is enabled
+
+If you encounter a Python script (e.g., `13_run_agent_swarm.py`, `23_run_swarm_v2.py`) that uses the Anthropic SDK or `claude --print`, DO NOT EXECUTE IT. Instead, inform the user that the script uses API tokens and offer to run the analysis through the Claude Code Agent tool instead.
+
+**Rationale**: The user pays for Claude Code tokens through their subscription. API calls consume separate credits. Blueprint Swarm must only use what the user is already paying for.
+
+### Rate Limit Protocol
+
+All subagents share the orchestrator's Claude Code rate limit pool. See `references/rate-limit-protocol.md` for the full protocol.
+
+**Key rules:**
+- Maximum 3 concurrent agents per wave (HARD LIMIT)
+- Run continuously — no artificial session budget cap
+- Wait for ALL agents in a wave to complete before launching the next wave
+- If rate-limited: state is auto-saved via StopFailure hook (`hooks/swarm-stop-failure.js`)
+- Watchdog script (`scripts/swarm-watchdog.sh`) auto-resumes after the rate limit window resets
+- On resume: read `data/{run-id}/state.json`, continue from next pending wave
+- State is updated after every wave — nothing is lost on interruption
+
 ### Quote Integrity
 - "Verbatim quotes" means EXACT text from source records. Never paraphrase.
 - The auditor spot-checks 20 random quotes against source data.
@@ -42,7 +75,8 @@ These are not decorations — they are the analytical framework. Agents that don
 - Test 3-4 records in the main window before launching any swarm.
 - Show the user the plan and get approval before spending tokens.
 - Progressive waves: classify first, then extract, then deep-analyze.
-- Never launch more than 50 concurrent agents (run in waves if needed).
+- Never launch more than 3 concurrent agents. Run in waves of 3, wait for completion, then launch next wave.
+- State is tracked in `data/{run-id}/state.json` — updated after every wave.
 
 ### Output Standards
 - JSON schemas in `schemas/` are canonical. Agents must conform.
@@ -64,7 +98,10 @@ These are not decorations — they are the analytical framework. Agents that don
 - Output schemas: `schemas/`
 - Templates: `templates/`
 - Reference docs: `references/`
+- Hooks: `hooks/swarm-stop-failure.js` — saves state on rate limit
+- Scripts: `scripts/swarm-watchdog.sh` — auto-resumes after rate limit resets
 - Run data: `data/{run-id}/`
+  - `state.json` — swarm progress tracking (see `references/state-schema.md`)
   - `normalized/` — normalized input data
   - `batches/` — per-agent batch files
   - `outputs/` — per-agent output files

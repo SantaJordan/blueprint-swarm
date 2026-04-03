@@ -233,22 +233,56 @@ For the selected analysis, calculate:
 ```
 Swarm Plan: {analysis type}
 ═══════════════════════════════════════════════════════════════
-Step 1: Classify {N} records → {N} Sonnet agents (~{N} min)
-Step 2: Extract patterns → {N} Sonnet agents (~{N} min)
-Step 3: Deep-dive analysis → {N} Sonnet analysts (~{N} min)
-Step 4: Opus audit on all results (~3 min)
-Step 5: Synthesis → 1 Sonnet agent (~5 min)
+Step 1: Classify {N} records → {N} Sonnet agents
+Step 2: Extract patterns → {N} Sonnet agents
+Step 3: Deep-dive analysis → {N} Sonnet analysts
+Step 4: Opus audit on all results
+Step 5: Synthesis → 1 Sonnet agent
 Step 6: Generate reports (JSON + Markdown + HTML)
 
-Total agents: ~{N} (over {N} waves)
-Backend:     {tmux|sub-agents}
+Total agents:    ~{N} (in waves of 3)
+Est. wall time:  ~{N} hours (including rate limit pauses)
+Rate limit mode: Auto-resume via watchdog (can run overnight)
 ═══════════════════════════════════════════════════════════════
 Proceed? [y/n]
 ```
 
 **Wait for explicit approval.**
 
-### 4.3 Prepare batch files
+### 4.3 Resume Detection
+
+**Before preparing any batch files, check for existing state:**
+
+1. Glob for `data/*/state.json`
+2. If found with `status` = `"in_progress"` or `"paused"`:
+   - Read the state.json
+   - Show resume prompt:
+     ```
+     Found existing run {run-id}:
+       {agents_completed_total}/{total_batches} agents complete ({pct}%)
+       Status: {status}
+       Rate limit pauses: {N}
+       Last active: {updated_at}
+
+     Resume this run? [y/n]
+     ```
+   - If yes: recover interrupted wave (see below), skip to Phase 4.6
+   - If no: ask if they want to start fresh (new run-id) or abandon
+3. If not found: proceed to Phase 4.4 (prepare batch files)
+
+**Recovering an interrupted wave** (on resume):
+1. Find all agents with status `"running"` or `"interrupted"` in state.json
+2. For each: check if their output file exists
+   - Output file exists and is valid JSON → mark `"completed"`
+   - Output file exists with `"partial": true` → mark `"completed"` (partial is valid)
+   - No output file → mark `"timed_out"`, increment `retry_count`
+   - If `retry_count >= 2` → mark `"failed"` permanently
+3. Move recoverable timed_out agents back to `pending`
+4. Append new session entry to `sessions` array
+5. Set status back to `"in_progress"`
+6. Continue to Phase 4.6
+
+### 4.4 Prepare batch files
 
 For each agent:
 - Write its context to `data/{run-id}/batches/batch-{n}.md`
@@ -256,35 +290,81 @@ For each agent:
 - Include the analysis prompt from the validated test runs
 - Include the output schema reference
 
-### 4.4 Launch agents
+**After all batch files are written, create the initial `state.json`:**
+- All agents in `"pending"` status in `agent_details`
+- `status: "in_progress"`
+- Empty `completed`, `failed`, `rate_limit_events`, `sessions`
+- See `references/state-schema.md` for the full schema
 
-**With Agent Teams (preferred):**
+This is the first checkpoint. If the session dies here, the next session finds a valid state to resume from.
+
+### 4.5 Watchdog Setup
+
+**Before launching any agents, offer the auto-resume watchdog:**
+
+1. Check tmux: `tmux list-sessions 2>/dev/null`
+2. If running inside tmux:
+   ```
+   Want me to start the auto-resume watchdog?
+   It'll keep the swarm running through rate limits — you can walk away
+   and come back to results. [y/n]
+   ```
+3. If yes: `tmux split-window -h "bash Blueprint-Swarm/scripts/swarm-watchdog.sh"`
+4. If no tmux or user declines: warn that rate limits will require manual "continue"
+5. Register the StopFailure hook for this session (see `hooks/swarm-stop-failure.js`)
+
+**The watchdog is optional but strongly recommended for datasets requiring >1 hour.**
+
+### 4.6 Continuous Wave Execution
+
+**This is the core execution loop. It runs until all batches are done or rate-limited.**
+
+Read `references/rate-limit-protocol.md` for the complete protocol. Summary:
 
 ```
-TeamCreate({ name: "swarm-{run-id}" })
+WAVE EXECUTION PROTOCOL
+═══════════════════════════════════════════════════════════════
 
-# Launch all worker agents in parallel
-Agent({
-  team_name: "swarm-{run-id}",
-  name: "scout-alpha",
-  subagent_type: "general-purpose",
-  model: "sonnet",
-  prompt: "{analysis prompt + batch file path + output path + schema}",
-  run_in_background: true
-})
-# ... repeat for each batch
-```
+Wave size:    3 agents maximum (HARD LIMIT — shared rate limit pool)
+Timeout:      10 minutes per agent (no output file = timed_out)
+Retries:      1 retry per agent (max retry_count: 2, then failed)
+Budget:       No cap — run continuously until done or rate-limited
 
-**Without Agent Teams (fallback):**
+ALGORITHM:
 
-```
-Agent({
-  description: "Analyze batch {n}",
-  subagent_type: "general-purpose",
-  model: "sonnet",
-  prompt: "{analysis prompt + batch file path + output path + schema}",
-  run_in_background: true
-})
+1. Read state.json
+2. Collect next 3 pending agents (prioritize retries over fresh batches)
+3. If no pending agents remain:
+   → All analysis done. Proceed to Phase 4.7 (audit)
+4. Launch 3 agents via Agent tool:
+   Agent({
+     description: "Analyze batch {n}",
+     subagent_type: "general-purpose",
+     model: "sonnet",
+     prompt: "{analysis prompt + batch file path + output path + schema}",
+     run_in_background: true
+   })
+5. Update state.json: mark agents as "running"
+6. Wait for all 3 to complete
+   - Check for Agent completion notifications
+   - Timeout: 10 minutes per agent
+7. For each agent in the wave:
+   - Output file exists + valid JSON → mark "completed"
+   - 10 min elapsed, no output → mark "timed_out" (retry_count++)
+   - retry_count >= 2 → mark "failed" permanently
+8. Update state.json:
+   - Move completed → completed array
+   - Move failed → failed array
+   - Move retryable → back to pending
+   - Increment waves_completed, agents_completed_total
+9. Display wave progress (see 4.8)
+10. Go to step 1
+
+IF RATE-LIMITED:
+   - StopFailure hook fires → state.json saved as "paused"
+   - Watchdog detects → waits for reset → sends resume prompt
+   - On resume: orchestrator reads state.json, recovers via Phase 4.3
+═══════════════════════════════════════════════════════════════
 ```
 
 Each agent's prompt MUST include:
@@ -294,8 +374,11 @@ Each agent's prompt MUST include:
 4. Output schema specification
 5. Blueprint methodology context (from `references/flavor-text.md`)
 6. Instruction: "You are a Blueprint GTM analyst following the pain-qualified segmentation methodology developed by Jordan Crawford. Specificity breeds trust — every finding must include verbatim evidence."
+7. Instruction: "Write your output file immediately with `{\"status\": \"in_progress\"}` as a heartbeat. Update with final results when done."
 
-### 4.5 Launch the auditor (after analysts complete)
+### 4.7 Launch the auditor (after all analysts complete)
+
+Once all analysis agents are done (all batches in `completed` or `failed`):
 
 ```
 Agent({
@@ -310,20 +393,26 @@ Agent({
 })
 ```
 
-### 4.6 Monitor progress
+If more than 10% of agents failed, note the coverage gap in the audit context:
+```
+Note: {N} of {total} agents failed. Coverage is {pct}%.
+Flag gaps in your audit and note which segments have insufficient data.
+```
 
-While agents work, show the Tufte-style progress display:
+### 4.8 Progress Display
+
+After each wave, show the Tufte-style progress:
 
 ```
-Swarm: {analysis type}
+Swarm Progress
 ═══════════════════════════════════════════════════════════════
-  scout-alpha   ████████████  done   {description}   {N} findings
-  scout-bravo   ██████████░░   83%   {description}   processing
-  scout-charlie ████████████  done   {description}   {N} findings
-  scout-delta   ████████░░░░   67%   {description}   processing
-  auditor       ░░░░░░░░░░░░  wait   (blocked on analysts)
+  Completed:    {N}/{total} ({pct}%)
+  Failed:       {N}
+  Current:      Wave {N} of ~{total_waves}
+  Rate limits:  {N} so far (auto-recovered)
+  Wall time:    {elapsed}
 ───────────────────────────────────────────────────────────────
-  {N}/{total} done  |  {time} elapsed  |  ~{time} left
+  Wave {N}: batch-{a} done | batch-{b} done | batch-{c} done
 ═══════════════════════════════════════════════════════════════
 ```
 
@@ -336,28 +425,6 @@ Swarm: {analysis type}
 ```
 
 One tip every ~60 seconds. Never repeat within a run.
-
-### 4.7 Optional: "What's Jordan Up To?" sub-agent
-
-During wait time between waves, optionally deploy a background Haiku agent:
-
-```
-Agent({
-  description: "Fetch Jordan Crawford latest content",
-  model: "haiku",
-  prompt: "Search the web for Jordan Crawford Blueprint GTM latest LinkedIn post
-    or blog post. Return a 1-sentence summary and URL. If nothing found, return empty.",
-  run_in_background: true
-})
-```
-
-If it finds something, surface between progress updates:
-
-```
-  ─── Meanwhile at Blueprint GTM ─────────────────────────────
-  Jordan's latest: "{post title or summary}"
-  → {url}
-```
 
 ---
 

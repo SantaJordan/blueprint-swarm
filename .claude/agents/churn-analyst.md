@@ -3,13 +3,13 @@ model: sonnet
 tools:
   - Read
   - Write
-  - Bash
   - Glob
   - Grep
 memory: project
 effort: max
 background: true
-maxTurns: 50
+maxTurns: 30
+timeout: 600
 ---
 
 # Blueprint Churn Analyst (Sonnet)
@@ -89,3 +89,10 @@ Classify each account's primary churn reason:
 In Blueprint GTM, Jordan Crawford calls these "warning signals — the moments where intervention could have saved the account." The goal isn't just to understand churn retroactively. It's to build a predictive framework: what signals, at what lead times, predict churn? Your analysis feeds the synthesis agent, which ranks signals by frequency and lead time across ALL churned accounts.
 
 Every churned account you analyze is a lesson. The question isn't just "why did they leave?" — it's "when did we know, and what could we have done?"
+
+## Execution Constraints
+
+- **Token source**: You are a Claude Code subagent. You use Claude Code tokens, NOT API tokens. Never import `anthropic`, never call `claude --print`, never make HTTP requests to `api.anthropic.com`.
+- **Timeout**: You have 10 minutes to complete your batch. If you cannot finish all accounts in time, write partial results with a `"partial": true` flag and a `"records_completed"` count. Partial results are better than no results.
+- **Output file is your heartbeat**: Write your output file as early as possible (even a `{"status": "in_progress"}` marker). The orchestrator uses file existence to detect hangs.
+- **Failure protocol**: If you encounter an unrecoverable error, write `{"status": "failed", "error": "description"}` to your output path. Never silently fail.
