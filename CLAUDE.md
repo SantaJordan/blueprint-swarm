@@ -57,13 +57,26 @@ If you encounter a Python script (e.g., `13_run_agent_swarm.py`, `23_run_swarm_v
 All subagents share the orchestrator's Claude Code rate limit pool. See `references/rate-limit-protocol.md` for the full protocol.
 
 **Key rules:**
-- Maximum 3 concurrent agents per wave (HARD LIMIT)
+- Maximum 6 concurrent agents (HARD LIMIT — more than 6 triggers rate limits)
 - Run continuously — no artificial session budget cap
-- Wait for ALL agents in a wave to complete before launching the next wave
 - If rate-limited: state is auto-saved via StopFailure hook (`hooks/swarm-stop-failure.js`)
 - Watchdog script (`scripts/swarm-watchdog.sh`) auto-resumes after the rate limit window resets
 - On resume: read `data/{run-id}/state.json`, continue from next pending wave
 - State is updated after every wave — nothing is lost on interruption
+
+**CRITICAL — Overnight / Unattended Runs:**
+The watchdog is NOT optional for overnight runs. Without it, the swarm dies at the first usage cap and sits dead until the user manually resumes — potentially wasting 12+ hours. Before ANY unattended run:
+
+1. Start Claude Code inside tmux: `tmux new-session -s swarm`
+2. Split the pane: `Ctrl-B %`
+3. Start the watchdog in the right pane: `bash Blueprint-Swarm/scripts/swarm-watchdog.sh`
+4. Switch back to the left pane to run the swarm
+
+The watchdog detects "out of extra usage" / "rate limit" messages, sleeps until the reset time, then sends a resume prompt automatically. This is the ONLY mechanism for unattended overnight recovery.
+
+**Usage Cap vs Rate Limit — Two Different Failure Modes:**
+- **Rate limit (429)**: Temporary, resets in minutes. Agents fail fast, retry in next wave.
+- **Usage cap ("out of extra usage")**: Daily/plan limit. Resets at midnight or plan boundary. ALL agents fail. Requires waiting hours. The watchdog handles both.
 
 ### Quote Integrity
 - "Verbatim quotes" means EXACT text from source records. Never paraphrase.
