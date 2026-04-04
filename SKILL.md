@@ -313,7 +313,7 @@ This is the first checkpoint. If the session dies here, the next session finds a
 4. If no tmux or user declines: warn that rate limits will require manual "continue"
 5. Register the StopFailure hook for this session (see `hooks/swarm-stop-failure.js`)
 
-**The watchdog is optional but strongly recommended for datasets requiring >1 hour.**
+**The watchdog is MANDATORY for any run expected to take >1 hour.** Without it, the swarm dies at the first usage cap and sits dead until manual intervention — potentially wasting 12+ hours (confirmed in production).
 
 ### 4.6 Continuous Wave Execution
 
@@ -325,10 +325,10 @@ Read `references/rate-limit-protocol.md` for the complete protocol. Summary:
 WAVE EXECUTION PROTOCOL
 ═══════════════════════════════════════════════════════════════
 
-Wave size:    3 agents maximum (HARD LIMIT — shared rate limit pool)
-Timeout:      10 minutes per agent (no output file = timed_out)
-Retries:      1 retry per agent (max retry_count: 2, then failed)
-Budget:       No cap — run continuously until done or rate-limited
+Concurrency: 6-10 agents sustained (launch 3 new as 3 complete)
+Timeout:     10 minutes per agent (no output file = timed_out)
+Retries:     1 retry per agent (max retry_count: 2, then failed)
+Budget:      No cap — run continuously until done or rate-limited
 
 ALGORITHM:
 
@@ -345,24 +345,27 @@ ALGORITHM:
      run_in_background: true
    })
 5. Update state.json: mark agents as "running"
-6. Wait for all 3 to complete
-   - Check for Agent completion notifications
-   - Timeout: 10 minutes per agent
-7. For each agent in the wave:
+6. DO NOT wait for all 3 to finish — as each agent completes:
    - Output file exists + valid JSON → mark "completed"
-   - 10 min elapsed, no output → mark "timed_out" (retry_count++)
+   - Timeout or error → mark "timed_out" (retry_count++)
    - retry_count >= 2 → mark "failed" permanently
-8. Update state.json:
-   - Move completed → completed array
-   - Move failed → failed array
-   - Move retryable → back to pending
-   - Increment waves_completed, agents_completed_total
-9. Display wave progress (see 4.8)
-10. Go to step 1
+   - Launch replacement agent immediately (keep pipeline full)
+7. Update state.json after each completion
+8. Display wave progress (see 4.8)
+9. Go to step 2 (grab next pending)
 
-IF RATE-LIMITED:
-   - StopFailure hook fires → state.json saved as "paused"
-   - Watchdog detects → waits for reset → sends resume prompt
+TARGET: Keep 6-10 agents in flight at all times.
+DO NOT batch-wait (launch 3, wait for all 3, launch 3).
+Instead: launch 3, and as each finishes launch 1 more.
+
+IF RATE-LIMITED (429):
+   - Pause launches for 2-5 minutes, let in-flight agents drain
+   - Resume with 3 fresh agents to test if limit cleared
+   - Do NOT launch 10+ agents immediately after a rate limit clears
+
+IF USAGE-CAPPED ("out of extra usage"):
+   - Save state.json with status "paused_usage_cap"
+   - Watchdog detects → sleeps until reset → sends resume prompt
    - On resume: orchestrator reads state.json, recovers via Phase 4.3
 ═══════════════════════════════════════════════════════════════
 ```
@@ -372,9 +375,10 @@ Each agent's prompt MUST include:
 2. Path to its batch file
 3. Path to write its output (in `data/{run-id}/outputs/`)
 4. Output schema specification
-5. Blueprint methodology context (from `references/flavor-text.md`)
-6. Instruction: "You are a Blueprint GTM analyst following the pain-qualified segmentation methodology developed by Jordan Crawford. Specificity breeds trust — every finding must include verbatim evidence."
-7. Instruction: "Write your output file immediately with `{\"status\": \"in_progress\"}` as a heartbeat. Update with final results when done."
+5. **One-shot read instruction**: "READ THE ENTIRE FILE IN ONE CALL: Use Read with limit=8000" — this eliminates multi-turn I/O overhead (~30-40% faster)
+6. Instruction: "You are a Blueprint GTM analyst. Specificity breeds trust — every finding must include verbatim evidence."
+
+**Keep prompts lean.** The batch file contains the data. The agent prompt should be the analysis instructions + file paths + output schema — nothing more. Long prompts waste tokens on every agent launch.
 
 ### 4.7 Launch the auditor (after all analysts complete)
 

@@ -57,8 +57,11 @@ If you encounter a Python script (e.g., `13_run_agent_swarm.py`, `23_run_swarm_v
 All subagents share the orchestrator's Claude Code rate limit pool. See `references/rate-limit-protocol.md` for the full protocol.
 
 **Key rules:**
-- Maximum 6 concurrent agents (HARD LIMIT — more than 6 triggers rate limits)
+- **Safe concurrency: 6-10 agents** — tested safe for sustained batch processing
+- **Danger zone: 15+ agents** — triggers cascading 429s and usage cap hits
+- **Never exceed 12 concurrent** — even briefly, the rate limit pool is shared across all agents
 - Run continuously — no artificial session budget cap
+- Launch new waves of 3 as previous agents complete (don't wait for all to finish)
 - If rate-limited: state is auto-saved via StopFailure hook (`hooks/swarm-stop-failure.js`)
 - Watchdog script (`scripts/swarm-watchdog.sh`) auto-resumes after the rate limit window resets
 - On resume: read `data/{run-id}/state.json`, continue from next pending wave
@@ -88,8 +91,37 @@ The watchdog detects "out of extra usage" / "rate limit" messages, sleeps until 
 - Test 3-4 records in the main window before launching any swarm.
 - Show the user the plan and get approval before spending tokens.
 - Progressive waves: classify first, then extract, then deep-analyze.
-- Never launch more than 3 concurrent agents. Run in waves of 3, wait for completion, then launch next wave.
 - State is tracked in `data/{run-id}/state.json` — updated after every wave.
+
+### Data Pre-Preparation (CRITICAL for Speed)
+
+**All data must be pre-prepared in batch files BEFORE the swarm runs.** Each batch file should contain the complete input data for its assigned accounts — the agent should never need to search, explore, or discover data. The flow is:
+
+1. **Preparation phase** (Python scripts, run once): Read source data → build account dossiers → split into batch files (markdown or JSON, ~3-5 records per batch, targeting 200-500KB per file)
+2. **Swarm phase** (Agent tool): Each agent reads ONE pre-prepared batch file → analyzes all records → writes ONE output JSON file
+
+**Agents should NOT:**
+- Search for files or explore the codebase
+- Make multiple Read calls to assemble data from different sources
+- Run queries or API calls to fetch data
+- Do anything except: read batch file → think → write output
+
+**One-Shot File Reading:**
+Batch files should be sized so the agent can read the entire file in a single Read call. Use `limit=8000` (or higher if needed) to read the full file in one turn. This eliminates multi-turn I/O overhead and reduces per-batch processing time by ~30-40%.
+
+Example agent prompt pattern:
+```
+Read the ENTIRE file in ONE call: Read with limit=8000 on {batch_path}.
+Write output to {output_path}.
+For EACH record: {analysis schema}.
+Write as JSON array. Go fast.
+```
+
+**Batch sizing guidelines:**
+- Target 200-500KB per batch file (~5,000-8,000 lines)
+- 3-5 records per batch (data-rich records) or 5-10 (thin records)
+- If a single record exceeds 500KB, give it its own batch
+- Round-robin distribute by record size so batches are balanced
 
 ### Output Standards
 - JSON schemas in `schemas/` are canonical. Agents must conform.
