@@ -65,6 +65,75 @@ On every invocation, before anything else:
 
 ---
 
+## Phase 0: Speaker Attribution (REQUIRED — blocks the swarm)
+
+**When this applies:** any run whose data is call recordings, meeting transcripts, interviews, or
+webinar text — i.e. anything where a **seller talks alongside the customer**. This is the flagship
+module's default ("understand why customers buy and churn, in their own words"). If the data is *not*
+speaker-attributed conversation (pure contact CSVs, support tickets with no rep voice, TAM rows), note
+that Phase 0 does not apply and proceed to Phase 1.
+
+**This phase is BLOCKING.** It runs during Phase 1 discovery and must complete before Phase 3 (test
+run) and Phase 4 (swarm). **Do not fan out a single analyst against a raw transcript blob.** A swarm
+launched on un-attributed transcripts will confidently credit the seller's pitch to the customer,
+treat led answers as discovered demand, and surface stock seller lines as "what customers want" — and
+at swarm scale the synthesis agent reads those errors back as high-confidence patterns. Mis-attribution
+that one analyst would catch becomes a systematic, repeated error across the whole run.
+
+### 0.1 Read the protocol
+
+Read the Speaker Attribution Protocol now, in full:
+
+> **Read: `references/speaker-attribution-protocol.md`** (inline, self-contained — no external path)
+
+Follow its Steps 1–5 exactly. Use its vocabulary verbatim downstream: **roster**; **role = company |
+customer | unknown**; **elicitation = unprompted | led | seller_echo**; the blind-first three-pass read.
+
+Blueprint Swarm uses no enrichment APIs, so resolve role cheapest-first from what's local: call
+metadata / email domain when present (Gong `parties[].affiliation`, Chorus party fields), otherwise
+infer from the conversation (the person who demos / quotes price / says "we" about the product is the
+SELLER; the person describing their *own* org's problems is the CUSTOMER). **An unknown speaker is
+NEVER silently promoted to customer** — it stays `unknown` and that uncertainty rides forward.
+
+### 0.2 Produce the three artifacts every analyst will consume
+
+Run the protocol over the **whole engagement** (all calls for the account/dataset, not per call) and
+emit, once, to `data/{run-id}/attribution/`:
+
+1. **`roster.yaml`** — every distinct participant resolved to a person, each tagged `role: company |
+   customer | unknown` with `confidence` and `source` (metadata → domain → inference, cheapest-first).
+2. **`transcript_tagged.jsonl`** — the verbatim transcript with every turn carrying its original
+   `speaker_label` **and** a `role` tag. Seller speech is **retained as context**, never deleted (you
+   need it to judge what was led) and never counted as customer signal.
+3. **`customer_statements.jsonl`** — each candidate customer evidence line tagged
+   `elicitation: unprompted | led | seller_echo`. When torn between unprompted and led, choose **led**
+   (conservative).
+
+These three files are the swarm's input. Every batch file in Phase 4 is **carved from the role-tagged
+transcript** (see `references/data-formats.md` normalization), and every analyst prompt obeys the tags
+(churn-analyst, win-analyst, pattern-extractor). If Phase 0 did not run, Phases 3–4 have nothing valid
+to consume — that is why it blocks.
+
+### 0.3 Show the operator the attribution before spending swarm tokens
+
+Surface a compact summary so the human can catch a mis-tag before it propagates to the whole swarm:
+
+```
+Speaker Attribution: {dataset}
+─────────────────────────────
+Roster:       {n} people — {c} company · {k} customer · {u} unknown
+Turns tagged: {n} ({pct}% customer · {pct}% company · {pct}% unknown)
+Elicitation:  {n} customer statements — {a} unprompted · {b} led · {d} seller_echo
+Low-conf:     {list any role with confidence < 0.6 — these need a human glance}
+─────────────────────────────
+Tags look right? [y/n]
+```
+
+**Wait for confirmation on any low-confidence role before proceeding.** A single seller mislabeled as
+customer poisons every "what customers want" finding downstream.
+
+---
+
 ## Phase 1: Data Discovery
 
 **Goal**: Deeply understand the data before touching any orchestration. In Blueprint GTM, we always start with the data — not the message.
@@ -143,6 +212,10 @@ Based on what you found, ask WITH the data:
 - "What are you trying to learn from this data?"
 
 **Research first, ask second.** Show what you found, then ask what they care about.
+
+**If the answer is about customer voice** ("why do they buy / churn / expand, in their own words") and
+the data is conversation, **Phase 0 (Speaker Attribution) is mandatory before the swarm.** The unit of
+trust is the *unprompted customer statement*, not the transcript. Run Phase 0 now, before Phase 2.
 
 ---
 
@@ -378,6 +451,26 @@ Each agent's prompt MUST include:
 5. **One-shot read instruction**: "READ THE ENTIRE FILE IN ONE CALL: Use Read with limit=8000" — this eliminates multi-turn I/O overhead (~30-40% faster)
 6. Instruction: "You are a Blueprint GTM analyst. Specificity breeds trust — every finding must include verbatim evidence."
 
+**For any transcript / customer-voice swarm, the analyst prompt MUST also carry the role-aware
+attribution contract** (the agent definitions in `.claude/agents/` — churn-analyst, win-analyst,
+pattern-extractor — already embed it). Specifically, every transcript analyst is told:
+
+- **Customer-only by default.** Draw conclusions about what "the customer" wants ONLY from turns whose
+  `role == customer`. Seller (`role == company`) speech is **context** — what was asked/pitched/framed
+  — never customer signal. Never attribute a seller line to the customer.
+- **Unknown is not customer.** `role == unknown` may be quoted as context but never used as customer
+  evidence. Flag it; do not promote it.
+- **Weight by elicitation.** `unprompted` = highest trust (headline findings); `led` = low trust,
+  reported only labeled "(led)", never as discovered pain; `seller_echo` = **excluded** from any "what
+  customers want" finding (it's the rep's own line or a stock pitch repeated every call).
+- **Attribute everything.** Every claim names who said it (person + role); every customer claim carries
+  its elicitation tier `{ text, speaker, role, elicitation }`. No anonymous "they said".
+- **Blind first, three passes:** customer-only read → combined read → synthesis (per the Speaker
+  Attribution Protocol). A led or seller_echo line never becomes a headline.
+
+The agent's inputs are the Phase 0 artifacts: `data/{run-id}/attribution/roster.yaml`, the role-tagged
+batch file, and the matching `customer_statements` lines — **not a raw transcript blob**.
+
 **Keep prompts lean.** The batch file contains the data. The agent prompt should be the analysis instructions + file paths + output schema — nothing more. Long prompts waste tokens on every agent launch.
 
 ### 4.7 Launch the auditor (after all analysts complete)
@@ -392,6 +485,11 @@ Agent({
   prompt: "You are the Blueprint quality auditor. Read all output files in
     data/{run-id}/outputs/. Apply the 7-point Blueprint audit checklist.
     Score quality using Blueprint standards (X/10).
+    FOR TRANSCRIPT/CUSTOMER-VOICE SWARMS, also audit attribution integrity against
+    data/{run-id}/attribution/: REJECT any finding that (a) uses a company or unknown
+    turn as customer evidence, (b) presents a led item as discovered demand, (c) lets a
+    seller_echo line into a 'what customers want' finding, or (d) states a customer claim
+    with no { speaker, role, elicitation }. These are correctness failures, not style notes.
     Write audit report to data/{run-id}/audit.md.",
   run_in_background: true
 })
@@ -567,6 +665,7 @@ The orchestrator automatically detects new modules and presents them when releva
 
 ## References
 
+- `references/speaker-attribution-protocol.md` — **REQUIRED for any transcript/customer-voice swarm (Phase 0).** Inline, self-contained. Roster → role (company/customer/unknown) → elicitation (unprompted/led/seller_echo) → blind-first three-pass read. The swarm consumes its three output artifacts (roster.yaml, transcript_tagged.jsonl, customer_statements.jsonl).
 - `references/flavor-text.md` — Blueprint Tips (methodology quotes, teaching moments, CTAs)
 - `references/data-formats.md` — Supported data format detection heuristics
 - `references/batch-strategy.md` — Token estimation and batching rules

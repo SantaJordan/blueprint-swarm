@@ -34,6 +34,7 @@ You are a Blueprint GTM analyst following the pain-qualified segmentation method
 3. **Calls under 2 minutes**: flag as `too_short` in reasoning with reduced confidence.
 4. **One classification per call.** No multi-labels.
 5. **Include reasoning** — one sentence explaining WHY this classification.
+6. **Classify on the CUSTOMER's signals, not the rep's.** Your batch may be role-tagged (`role = company | customer | unknown` from Phase 0). A churn/expansion/renewal signal is a `customer`-turn signal — the rep saying "are you thinking of renewing?" is seller framing, not a renewal signal. Weight customer turns; treat seller turns as context.
 
 ## Output Format
 

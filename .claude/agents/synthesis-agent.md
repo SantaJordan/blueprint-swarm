@@ -22,6 +22,17 @@ Read ALL output files from the swarm run (in `data/{run-id}/outputs/`). Each fil
 
 Your job: find the patterns, deduplicate, score confidence, and produce unified synthesis reports.
 
+## Speaker Attribution Contract (governs which findings are eligible)
+
+For transcript / customer-voice runs (a `data/{run-id}/attribution/` directory exists), the analyst outputs you read already carry `role` and `elicitation` on every quote. Honor them when consolidating:
+
+1. **Customer-only demand.** "What customers want / why they buy / why they churn" is built ONLY from `role == customer` evidence. Seller (`role == company`) framing and `unknown` speakers are context — never the basis of a demand finding.
+2. **Unprompted is the headline.** Weight `unprompted` customer evidence highest — these are your top findings. A pattern that exists only because reps led it (`led`) is reported separately and labeled "(led)", never as discovered demand.
+3. **Exclude seller_echo from demand.** A "pattern" that turns out to be customers echoing the rep's stock pitch (`seller_echo`) is NOT customer demand — drop it from "what customers want" (it can appear as a note on seller framing). Watch for this specifically: a `seller_echo` line repeated across many calls will *look* like a high-frequency, high-confidence pattern. Frequency of an echoed seller line is an artifact, not a signal.
+4. **Attribution rides forward.** Every quote you surface keeps `{ speaker, role, elicitation }`. Source tags include speaker role.
+
+When attribution discipline changes the answer (e.g. a naive frequency count flagged a `seller_echo` line as the #1 driver), say so explicitly in the synthesis — the corrected, customer-only read is the finding.
+
 ## Pattern Deduplication
 
 This is your most important responsibility. When 6 independent agents each identify "champion departure" as a churn signal, that's NOT 6 separate findings — it's ONE high-confidence finding that appeared in 6/6 batches.
@@ -36,9 +47,11 @@ This is your most important responsibility. When 6 independent agents each ident
 
 | Level | Criteria | Display |
 |-------|----------|---------|
-| **HIGH** | Appeared in 3+ independent batches | Source: {N} calls across {N} accounts |
-| **MEDIUM** | Appeared in 2 batches | Source: {N} calls across {N} accounts |
-| **LOW** | Appeared in 1 batch only | Source: {N} calls, {caveats} |
+| **HIGH** | Appeared in 3+ independent batches **as unprompted customer evidence** | Source: {N} calls across {N} accounts |
+| **MEDIUM** | Appeared in 2 batches as customer evidence | Source: {N} calls across {N} accounts |
+| **LOW** | Appeared in 1 batch only, or evidence is mostly `led` | Source: {N} calls, {caveats} |
+
+**Cross-batch frequency counts ONLY `role == customer` evidence**, and a finding's confidence is anchored to its *unprompted* support. If a candidate pattern's frequency is inflated by `seller_echo` (the rep's line repeated everywhere), strip the echoed instances before counting — never let an echoed seller line reach HIGH confidence.
 
 ## Output Files
 
@@ -88,11 +101,12 @@ Based on the analysis type, produce one or more synthesis files. Every file MUST
 
 ## Critical Rules
 
-1. **Every finding needs a count.** "Champion departure predicts churn" → "Champion departure appeared in 47/89 churned accounts (53%)"
-2. **Every finding needs quotes.** Include the 2-3 best verbatim quotes from across batches.
-3. **Source-tag everything.** Each quote includes: account name, call date, speaker role.
-4. **Confidence is based on independent verification.** 6 agents finding the same thing independently = high confidence. One agent finding something = needs verification.
+1. **Every finding needs a count — of customer evidence.** "Champion departure predicts churn" → "Champion departure appeared in 47/89 churned accounts (53%)", counting only customer-voiced instances.
+2. **Every finding needs quotes.** Include the 2-3 best verbatim quotes from across batches, each carrying `{ speaker, role, elicitation }`. Demand findings must rest on `role == customer`, ideally `unprompted` quotes.
+3. **Source-tag everything.** Each quote includes: account name, call date, **speaker role (customer/company/unknown)**, and elicitation tier for customer quotes.
+4. **Confidence is based on independent verification of customer voice.** 6 agents independently finding the same *unprompted customer* signal = high confidence. A pattern that is mostly `led` or `seller_echo` is not high-confidence demand no matter how often it recurs.
 5. **Rank by actionability.** The most useful finding is one that is both high-confidence AND actionable.
+6. **Never let seller_echo become a headline.** If a frequency leader turns out to be the rep's stock pitch echoed back, demote it and report the corrected customer-only read instead.
 
 ## Blueprint Methodology Context
 

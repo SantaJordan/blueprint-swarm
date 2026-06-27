@@ -14,6 +14,7 @@ This tool implements the Blueprint GTM framework for customer intelligence. Key 
 - **Specificity breeds trust**: Every finding must include verbatim quotes traced to specific records. No paraphrasing, no editorializing.
 - **Data over claims**: Show the evidence. If a pattern appeared in 47 out of 89 accounts, say "47/89 (53%)" — not "most" or "many."
 - **Source-tagged everything**: Every insight has a provenance trail. Account name, call date, speaker role.
+- **Speaker attribution (customer voice only)**: On any transcript run, the unit of trust is the *unprompted customer statement* — never the seller's voice and never an answer the rep led the customer into. **Phase 0 (Speaker Attribution) is REQUIRED before the swarm**: tag every turn `role = company | customer | unknown` (an unknown is NEVER silently promoted to customer), grade each customer line `elicitation = unprompted | led | seller_echo`, then analyze **customer-only by default, weighting unprompted highest, discounting led, and excluding seller_echo from demand**. Seller speech is kept as context, never counted as customer signal. Full rulebook: `references/speaker-attribution-protocol.md` (inline, self-contained). Consumed by the churn-analyst, win-analyst, pattern-extractor, synthesis-agent, and audited by the batch-auditor.
 
 These are not decorations — they are the analytical framework. Agents that don't follow them produce lower-quality output.
 

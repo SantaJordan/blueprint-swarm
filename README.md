@@ -70,6 +70,8 @@ The data discovery phase auto-detects your format and normalizes everything befo
 You: /blueprint-swarm ./my-gong-export/
 
   Phase 1: DISCOVER — Scan your data, profile each source
+  Phase 0: ATTRIBUTE — (transcripts) Tag every turn seller vs. customer,
+                       grade customer lines unprompted / led / seller-echo
   Phase 2: FOCUS   — Ask what you care about (churn? wins? all?)
   Phase 3: TEST    — Validate approach on 3-4 sample records
   Phase 4: SWARM   — Launch agents in waves of 3, auto-resume through rate limits
@@ -77,6 +79,12 @@ You: /blueprint-swarm ./my-gong-export/
 
 Output: JSON synthesis + Markdown report + Interactive HTML playbook
 ```
+
+**Why Phase 0 matters:** the seller talks on every call. Analyze the transcript as one block and you'll
+credit the rep's pitch to the customer, treat answers the rep walked them into as real demand, and
+surface stock seller lines as "what customers want." Blueprint Swarm tags who said what first — so the
+findings rest on what the *customer* raised **unprompted**, not on the rep's framing echoed back at
+scale.
 
 ## What You'll See
 

@@ -123,12 +123,25 @@ Normalization steps:
 3. Write a `manifest.json` listing all normalized files with their profiles
 4. Write a `run-config.json` capturing the user's module selections and parameters
 
+### Step 7: Speaker Attribution (Phase 0 — transcript data only)
+
+**If the normalized data is conversation (transcripts), run the Speaker Attribution Protocol here, before any analysis module fans out.** See `references/speaker-attribution-protocol.md`. This is the bridge between normalization and the swarm: the canonical `turns[]` already carry a `speaker` label — attribution adds the `role` tag and grades customer statements.
+
+Over the **whole engagement** (all calls, not per call), produce `data/{run-id}/attribution/`:
+
+1. **`roster.yaml`** — every distinct participant resolved once to a person, tagged `role: company | customer | unknown` with `confidence` + `source` (metadata/email-domain → conversation inference, cheapest-first). An `unknown` speaker is NEVER silently promoted to customer.
+2. **`transcript_tagged.jsonl`** — the normalized turns with a `role` tag added alongside each turn's original `speaker_label` (verbatim preserved; seller speech retained as context, never deleted).
+3. **`customer_statements.jsonl`** — each candidate customer evidence line tagged `elicitation: unprompted | led | seller_echo` (when torn, choose `led`).
+
+Show the operator the compact attribution summary and wait for confirmation on any low-confidence role before dispatching modules. Every analysis batch is carved from `transcript_tagged.jsonl`, not the raw blob.
+
 ## Output
 
 - `data/{run-id}/normalized/` — all normalized data files
+- `data/{run-id}/attribution/` — roster.yaml + transcript_tagged.jsonl + customer_statements.jsonl (transcript runs)
 - `data/{run-id}/manifest.json` — file inventory with profiles
 - `data/{run-id}/run-config.json` — module configuration for this run
 
 ## Handoff
 
-After data discovery completes, the orchestrator reads `manifest.json` and `run-config.json` to dispatch the appropriate analysis modules.
+After data discovery completes, the orchestrator reads `manifest.json` and `run-config.json` to dispatch the appropriate analysis modules. **For transcript runs, the `data/{run-id}/attribution/` artifacts are a required input to every customer-voice module** — if they are missing, Phase 0 did not run and the swarm must not proceed.

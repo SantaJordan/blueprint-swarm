@@ -1,10 +1,15 @@
 # Win Pattern Analysis
 
-Pain-qualified segmentation — specific pains that predict buying.
+Pain-qualified segmentation — specific pains that predict buying, **named by the buyer, not pitched by the rep.**
+
+## Speaker Attribution (Phase 0 — REQUIRED before this module)
+
+This is the heart of the customer-voice work, so **Phase 0 (Speaker Attribution) must complete before any win analyst fans out.** See `references/speaker-attribution-protocol.md`. The win factor MUST be the buyer's unprompted pain, not the rep's value pitch: "wouldn't multi-warehouse sync help?" → "sure" is `led`; a buyer repeating the rep's "all-in-one platform" line is `seller_echo`, excluded. The "aha moment" must be a `role == customer` turn. Analysts read the role-tagged transcript and elicitation-graded customer statements from `data/{run-id}/attribution/` — never a raw blob.
 
 ## Required Data
 
 - Calls classified as `discovery`, `demo`, `negotiation`, `closing` on won deals
+- **Speaker-attributed** (Phase 0 artifacts present): roster + role-tagged turns + elicitation-graded customer statements
 - Minimum: 5 closed-won deal cycles for meaningful pattern detection
 - Ideal: full deal arc (discovery through closing) for each won deal
 - Optional: CRM data with deal size, sales cycle length, close date
@@ -24,23 +29,24 @@ If deal grouping is ambiguous, the agent uses account name + date proximity to c
 
 Fan out one agent per deal group (batch size: 2-3 deals per agent, since full-arc analysis requires deep reading).
 
-Each analyst extracts:
+Each analyst extracts, **customer-only and weighted by elicitation** (the win-analyst agent embeds the full attribution contract):
 
-- **Win factors**: What specifically caused the buyer to choose this vendor?
-- **Pain-to-value narrative**: What pain was articulated, and how did it map to the product's value?
-- **Champion profile**: Who was the internal champion? What made them effective?
+- **Win factors**: What specifically caused the buyer to choose this vendor — as the BUYER articulated it **unprompted**? Rep-led or rep-echoed "wins" are listed separately, never counted.
+- **Pain-to-value narrative**: What pain did the *customer* articulate (unprompted), and how did it map to the product's value? The value claims the rep made are seller framing, kept distinct.
+- **Champion profile**: Who was the internal champion (a `role == customer` person)? What made them effective?
 - **Decision process**: Who else was involved? What was the evaluation criteria?
-- **Objection patterns**: What objections arose and how were they resolved?
-- **Competitive positioning**: How was the product positioned against alternatives?
-- **Closing triggers**: What moment or event accelerated the close?
-- **Discovery quality**: What questions elicited the most useful information?
+- **Objection patterns**: What objections arose and how were they resolved? (Objections = customer turns; rep responses = seller context.)
+- **Competitive positioning**: How was the product positioned against alternatives? (Rep positioning is context; a competitor counts as a buyer signal only when the customer raised it.)
+- **Closing triggers**: What moment or event — in a customer turn — accelerated the close?
+- **Discovery quality**: What questions (seller context) elicited the most useful information? The *answers* that count as buyer pain must be `role == customer`.
 
 ### 3. Audit Pass
 
 Auditor reviews all analyst outputs for:
 - Win factor consistency — are the same factors appearing across deals?
+- **Attribution integrity** — no `company`/`unknown` turn used as a win factor, no `led` "win" presented as a buying driver, no `seller_echo` pitch-line counted as buyer demand, the aha moment is a customer turn, every quote carries `{ speaker, role, elicitation }` (see batch-auditor point 8)
 - Champion archetype validation — do champion profiles cluster into types?
-- Quote quality — are the strongest quotes actually representative?
+- Quote quality — are the strongest quotes actually representative customer (not rep) voice?
 - Missing patterns visible only in cross-deal comparison
 
 ### 4. Synthesis
@@ -57,11 +63,11 @@ The synthesis agent produces:
 ## Extraction Schema
 
 Uses `schemas/call-extraction.json` with emphasis on:
-- `pain_themes` — all severities, especially `critical` and `high`
-- `champion_profile` — full profile with `engagement_level` = `high`
-- `objection_handling` — all entries, especially `outcome` = `resolved`
-- `competitive_mentions` — all contexts
-- `key_quotes` — highest signal quotes that capture the "why they bought" moment
+- `pain_themes` — all severities, especially `critical` and `high`, evidenced by `role == customer` quotes (ideally `unprompted`)
+- `champion_profile` — full profile with `engagement_level` = `high` (a `role == customer` person)
+- `objection_handling` — all entries, especially `outcome` = `resolved` (objection = customer turn; response = seller context)
+- `competitive_mentions` — all contexts, flagged by who raised the competitor
+- `key_quotes` — highest-signal **customer** quotes that capture the "why they bought" moment, each carrying `{ speaker, role, elicitation }`
 
 ## Blueprint Methodology
 

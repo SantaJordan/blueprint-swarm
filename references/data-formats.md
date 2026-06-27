@@ -65,14 +65,23 @@ Every call transcript (Gong, Chorus, raw text, PDF) is normalized to:
   "call_date": "YYYY-MM-DD (from metadata or filename)",
   "duration_minutes": "number or null",
   "participants": [
-    { "name": "string", "role": "string or unknown", "side": "seller|buyer|unknown" }
+    { "name": "string", "title": "string or unknown", "attribution_role": "company|customer|unknown" }
   ],
   "transcript": [
-    { "speaker": "string", "timestamp": "string or null", "text": "string" }
+    { "speaker": "string", "attribution_role": "company|customer|unknown", "timestamp": "string or null", "text": "string" }
   ],
   "raw_text": "string (full concatenated transcript for token counting)"
 }
 ```
+
+**`attribution_role` is set by Phase 0 (Speaker Attribution), not by normalization alone.** Normalization
+captures the raw `speaker` label and any party metadata (Gong `parties[].affiliation`, email domain);
+Phase 0 then resolves each participant to `company` (the seller), `customer` (the buyer), or `unknown`
+and stamps the `attribution_role` on every turn. **Internal/seller-domain → `company`; external/buyer →
+`customer`; unplaceable → `unknown` (NEVER defaulted to customer).** Use the protocol's vocabulary
+(`company | customer | unknown`) so downstream agents read one consistent tag. See
+`speaker-attribution-protocol.md` and Phase 0 in `SKILL.md` — the role-tagged turns and the graded
+`customer_statements` are written to `data/{run-id}/attribution/` and are the swarm's real input.
 
 ### CRM Data → Normalized Deal/Account Object
 
